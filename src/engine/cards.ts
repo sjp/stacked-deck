@@ -5,6 +5,10 @@ export type Rank = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 export const SUITS: readonly Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 export const RANKS: readonly Rank[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
+export function isRank(value: number): value is Rank {
+  return Number.isInteger(value) && value >= 1 && value <= 13;
+}
+
 export interface Card {
   /** Unique within a deal, even when several decks are in play. */
   readonly id: number;
