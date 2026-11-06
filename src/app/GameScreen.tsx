@@ -142,6 +142,7 @@ export function GameScreen({ variant, seed }: Props) {
             moves: session.moves,
             hints: session.hints,
             undos: game.undos,
+            newBests: session.newBests,
           },
           onPhase: celebration.setPhase,
           onNewGame: () => {
