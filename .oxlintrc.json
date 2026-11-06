@@ -1,54 +1,155 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc", "import", "vitest"],
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "react",
+    "jsx-a11y",
+    "promise",
+    "vitest"
+  ],
   "options": {
     "typeAware": true,
     "typeCheck": true,
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   },
+  "env": { "browser": true, "es2024": true },
+  "settings": {
+    "react": { "version": "19" }
+  },
+  // Every rule in these categories is on. The rules below add picks from the style,
+  // restriction and nursery categories, and turn off the few that are noise.
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error"
+  },
   "rules": {
-    "react/rules-of-hooks": "error",
+    /* Off: noise, or covered by something stricter */
+    "max-lines": "off",
+    "max-lines-per-function": "off",
+    "no-inline-comments": "off",
+    "no-warning-comments": "off",
+    "no-negated-condition": "off",
+    "unicorn/no-negated-condition": "off",
+    "no-underscore-dangle": "off",
+    "react/react-in-jsx-scope": "off", // the automatic JSX runtime needs no React import
+    "unicorn/no-useless-undefined": "off", // fights consistent-return and useState(undefined)
+    "typescript/prefer-readonly-parameter-types": "off", // flags most DOM and React types
 
-    "typescript/await-thenable": "error",
-    "typescript/no-array-delete": "error",
-    "typescript/no-base-to-string": "error",
-    "typescript/no-confusing-void-expression": "error",
-    "typescript/no-deprecated": "error",
-    "typescript/no-duplicate-type-constituents": "error",
-    "typescript/no-floating-promises": "error",
-    "typescript/no-for-in-array": "error",
-    "typescript/no-implied-eval": "error",
-    "typescript/no-meaningless-void-operator": "error",
-    "typescript/no-misused-promises": "error",
-    "typescript/no-misused-spread": "error",
-    "typescript/no-mixed-enums": "error",
-    "typescript/no-redundant-type-constituents": "error",
-    "typescript/no-unnecessary-boolean-literal-compare": "error",
+    /* Tightened options */
+    "typescript/strict-boolean-expressions": [
+      "error",
+      { "allowString": false, "allowNumber": false, "allowNullableObject": false }
+    ],
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+
+    /* Types and type assertions */
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/no-non-null-asserted-nullish-coalescing": "error",
+    "typescript/consistent-type-assertions": [
+      "error",
+      { "assertionStyle": "as", "objectLiteralTypeAssertions": "never" }
+    ],
+    "typescript/no-dynamic-delete": "error",
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-invalid-void-type": "error",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-namespace": "error",
+    "typescript/no-require-imports": "error",
+    "typescript/prefer-literal-enum-member": "error",
+    "typescript/promise-function-async": "error",
+    "typescript/use-unknown-in-catch-callback-variable": "error",
     "typescript/no-unnecessary-condition": "error",
-    "typescript/no-unnecessary-template-expression": "error",
-    "typescript/no-unnecessary-type-arguments": "error",
-    "typescript/no-unnecessary-type-assertion": "error",
-    "typescript/no-unnecessary-type-conversion": "error",
-    "typescript/no-unnecessary-type-parameters": "error",
-    "typescript/no-unsafe-argument": "error",
-    "typescript/no-unsafe-assignment": "error",
-    "typescript/no-unsafe-call": "error",
-    "typescript/no-unsafe-enum-comparison": "error",
-    "typescript/no-unsafe-member-access": "error",
-    "typescript/no-unsafe-return": "error",
-    "typescript/no-unsafe-unary-minus": "error",
-    "typescript/only-throw-error": "error",
-    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/prefer-optional-chain": "error",
+    "typescript/prefer-for-of": "error",
+    "typescript/prefer-find": "error",
+    "typescript/prefer-readonly": "error",
     "typescript/prefer-reduce-type-parameter": "error",
     "typescript/prefer-return-this-type": "error",
-    "typescript/related-getter-setter-pairs": "error",
-    "typescript/require-await": "error",
-    "typescript/restrict-plus-operands": "error",
-    "typescript/restrict-template-expressions": "error",
-    "typescript/return-await": "error",
-    "typescript/switch-exhaustiveness-check": "error",
-    "typescript/unbound-method": "error",
-    "typescript/use-unknown-in-catch-callback-variable": "error"
-  }
+    "typescript/prefer-string-starts-ends-with": "error",
+
+    /* JavaScript footguns */
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-alert": "error",
+    "no-empty": "error",
+    "no-param-reassign": "error",
+    "no-proto": "error",
+    "no-sequences": "error",
+    "no-var": "error",
+    "no-void": ["error", { "allowAsStatement": true }],
+    "no-implicit-coercion": "error",
+    "no-implicit-globals": "error",
+    "no-restricted-globals": [
+      "error",
+      { "name": "event", "message": "Use the event handler's parameter." },
+      { "name": "name", "message": "Did you mean a local variable? This is window.name." },
+      { "name": "length", "message": "Did you mean a local variable? This is window.length." },
+      { "name": "status", "message": "Did you mean a local variable? This is window.status." }
+    ],
+    "no-template-curly-in-string": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+    "no-return-assign": "error",
+    "no-multi-assign": "error",
+    "no-label-var": "error",
+    "no-labels": "error",
+    "guard-for-in": "error",
+    "default-param-last": "error",
+    "prefer-const": "error",
+    "prefer-object-has-own": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "no-unreachable-loop": "error",
+    "promise/no-return-in-finally": "error",
+    "promise/spec-only": "error",
+    "oxc/bad-bitwise-operator": "error",
+    "unicorn/no-abusive-eslint-disable": "error",
+    "unicorn/no-document-cookie": "error",
+    "unicorn/no-length-as-slice-end": "error",
+    "unicorn/no-useless-error-capture-stack-trace": "error",
+    "unicorn/prefer-number-properties": "error",
+    "unicorn/prefer-modern-math-apis": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/throw-new-error": "error",
+    "unicorn/error-message": "error",
+    "unicorn/require-array-join-separator": "error",
+    "unicorn/prefer-structured-clone": "error",
+
+    /* Modules */
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-commonjs": "error",
+    "import/no-amd": "error",
+    "import/no-dynamic-require": "error",
+    "import/no-webpack-loader-syntax": "error",
+    "import/no-mutable-exports": "error",
+
+    /* React */
+    "react/button-has-type": "error",
+    "react/no-danger": "error",
+    "react/no-unknown-property": "error",
+    "react/only-export-components": "error",
+    "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "max-nested-callbacks": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    },
+    {
+      "files": ["vite.config.ts"],
+      "env": { "browser": false, "node": true }
+    }
+  ]
 }
