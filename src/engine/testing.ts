@@ -1,6 +1,7 @@
 import type { Card, Rank, Suit } from "./cards.ts";
 import { isRank } from "./cards.ts";
 import type { GameState, Pile, PileKind, VariantOptions } from "./types.ts";
+import type { Variant } from "./variant.ts";
 
 const SUIT_CODES: Readonly<Record<string, Suit>> = {
   S: "spades",
@@ -76,4 +77,30 @@ export function codes(pile: Pile | undefined): string {
         `${c.faceUp ? "" : "-"}${letters[c.rank] ?? String(c.rank)}${c.suit[0]?.toUpperCase() ?? ""}`,
     )
     .join(" ");
+}
+
+/**
+ * Plays up to `steps` legal moves (picked by a fixed pattern) and returns every position
+ * reached, for checking that a variant's move generator only offers legal moves.
+ */
+export function walk(variant: Variant, start: GameState, steps: number): GameState[] {
+  const states = [start];
+  let state = start;
+  for (let i = 0; i < steps; i++) {
+    const moves = variant.legalMoves(state);
+    const move = moves[(i * 7) % Math.max(1, moves.length)];
+    if (move === undefined) {
+      break;
+    }
+    state = variant.applyMove(state, move);
+    states.push(state);
+  }
+  return states;
+}
+
+/** Whether every move the variant offers in each position is legal. */
+export function allOfferedMovesLegal(variant: Variant, states: readonly GameState[]): boolean {
+  return states.every((state) =>
+    variant.legalMoves(state).every((move) => variant.canMove(state, move)),
+  );
 }
