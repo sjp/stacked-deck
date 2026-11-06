@@ -1,0 +1,89 @@
+import { settle } from "./game.ts";
+import { hintScore } from "./hints.ts";
+import { pilesKey } from "./state.ts";
+import type { GameState, Move } from "./types.ts";
+import type { AutoMoveOptions, Variant } from "./variant.ts";
+
+export interface SolveLimits {
+  /** Positions to expand before giving up. */
+  readonly maxNodes: number;
+  /** Wall-clock budget in milliseconds. */
+  readonly maxMs: number;
+}
+
+export type SolveResult =
+  | { readonly status: "solved"; readonly moves: readonly Move[]; readonly nodes: number }
+  | { readonly status: "unsolvable"; readonly nodes: number }
+  | { readonly status: "gave-up"; readonly nodes: number };
+
+/** The solver plays with safe auto-moves on, as the game does by default. */
+export const SOLVER_AUTO: AutoMoveOptions = { safeToFoundation: true };
+
+interface Frame {
+  readonly state: GameState;
+  readonly moves: readonly Move[];
+  next: number;
+}
+
+/** Moves worth trying, best first. Shuffles that make no progress are skipped. */
+function orderedMoves(variant: Variant, state: GameState): Move[] {
+  return variant
+    .legalMoves(state)
+    .map((move) => ({ move, score: hintScore(variant, state, move) }))
+    .filter(({ score }) => score > 0)
+    .toSorted((a, b) => b.score - a.score)
+    .map(({ move }) => move);
+}
+
+/**
+ * Depth-first search for a win, remembering positions already seen. It searches with
+ * every card known (for Klondike, that is how a "winnable" deal is usually defined).
+ * The returned moves are player moves; automatic moves follow each one, as in play.
+ */
+export function solve(
+  variant: Variant,
+  start: GameState,
+  limits: SolveLimits,
+  now: () => number = () => Date.now(),
+): SolveResult {
+  const deadline = now() + limits.maxMs;
+  const key = (state: GameState) => variant.stateKey?.(state) ?? pilesKey(state);
+  const first = settle(variant, start, SOLVER_AUTO).state;
+  const seen = new Set<string>([key(first)]);
+  const path: Move[] = [];
+  const stack: Frame[] = [{ state: first, moves: orderedMoves(variant, first), next: 0 }];
+  let nodes = 0;
+
+  if (variant.isWon(first)) {
+    return { status: "solved", moves: [], nodes };
+  }
+  while (stack.length > 0) {
+    const frame = stack.at(-1);
+    if (frame === undefined) {
+      break;
+    }
+    const move = frame.moves[frame.next];
+    frame.next += 1;
+    if (move === undefined) {
+      stack.pop();
+      path.pop();
+      continue;
+    }
+    nodes += 1;
+    if (nodes > limits.maxNodes || (nodes % 256 === 0 && now() > deadline)) {
+      return { status: "gave-up", nodes };
+    }
+    const next = settle(variant, variant.applyMove(frame.state, move), SOLVER_AUTO).state;
+    if (variant.isWon(next)) {
+      return { status: "solved", moves: [...path, move], nodes };
+    }
+    const nextKey = key(next);
+    if (seen.has(nextKey)) {
+      continue;
+    }
+    seen.add(nextKey);
+    path.push(move);
+    stack.push({ state: next, moves: orderedMoves(variant, next), next: 0 });
+  }
+  return { status: "unsolvable", nodes };
+}
