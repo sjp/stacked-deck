@@ -100,6 +100,15 @@ export function GameScreen({ variant, seed }: Props) {
             disabled: !session.canRedo,
             onClick: session.redo,
           },
+          ...(session.canFinish && !session.finishing
+            ? [
+                {
+                  icon: "finish" as const,
+                  label: "Finish",
+                  onClick: session.finish,
+                },
+              ]
+            : []),
           {
             icon: "settings",
             label: "Settings",

@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import { emitFeedback } from "./feedback.ts";
 import { loadGame } from "./gameStore.ts";
 import type { Settings } from "./settings.ts";
 import { optionsFor } from "./settings.ts";
+import { useAutoFinish } from "./useAutoFinish.ts";
 import { useAutoSave } from "./useAutoSave.ts";
 import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
 import { useGameClock } from "./useTimer.ts";
@@ -30,6 +32,16 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   const started = moveCount(game) > 0;
   // The timer runs from the first move until the win, while the page is visible.
   const timer = useGameClock(initial.elapsedMs, started && !won && !paused);
+  const canFinish = !won && variant.canFinish?.(state) === true;
+  const [finishRequested, setFinishRequested] = useState(false);
+  const finishing = canFinish && (settings.autoFinish || finishRequested);
+  useAutoFinish(variant, state, finishing, settings.animation, auto, dispatch);
+
+  useEffect(() => {
+    if (won) {
+      emitFeedback("win");
+    }
+  }, [won]);
 
   useAutoSave(game, hints, timer);
 
@@ -37,6 +49,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
     (dealOptions: VariantOptions, dealSeed: number | undefined) => {
       timer.reset();
       setHints(0);
+      setFinishRequested(false);
       replace(newGame(variant, dealSeed, dealOptions, auto));
     },
     [auto, replace, timer, variant],
@@ -59,6 +72,11 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
       state,
       won,
       moves: moveCount(game),
+      canFinish,
+      finishing,
+      finish: () => {
+        setFinishRequested(true);
+      },
       canUndo: undoable(game),
       canRedo: redoable(game),
       hints,
@@ -75,6 +93,6 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
         setHints((count) => count + 1);
       },
     }),
-    [dispatch, game, hints, play, start, state, timer, won],
+    [canFinish, dispatch, finishing, game, hints, play, start, state, timer, won],
   );
 }
