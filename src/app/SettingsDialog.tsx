@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { OptionValue, VariantOptions } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
 import { Dialog } from "../ui/Dialog.tsx";
+import { winnableAvailable } from "./deals.ts";
 import type { AnimationSpeed } from "./settings.ts";
 import { ANIMATION_SPEEDS, CARD_BACKS, hapticsSupported, sameOptions } from "./settings.ts";
 import { useSettings } from "./settingsContext.ts";
@@ -242,6 +243,11 @@ export function SettingsDialog({ open, onClose, variant, currentOptions, onNewGa
           />
           <Toggle
             label="Winnable deals only"
+            {...(variant !== undefined &&
+            shownOptions !== undefined &&
+            !winnableAvailable(variant, shownOptions)
+              ? { hint: `Not available for these ${variant.name} options, so deals are random` }
+              : {})}
             checked={settings.winnableOnly}
             onChange={(winnableOnly) => {
               update({ winnableOnly });

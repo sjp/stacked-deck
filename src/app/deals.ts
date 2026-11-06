@@ -22,6 +22,12 @@ const SOLVE_AT_RUNTIME = new Set([
 const RUNTIME_BUDGET_MS = 700;
 const PER_SEED_MS = 150;
 
+/** Whether winnable deals can be offered for these options (solved now, or from the list). */
+export function winnableAvailable(variant: Variant, options: VariantOptions): boolean {
+  const key = dealKey(variant, options);
+  return SOLVE_AT_RUNTIME.has(key) || (WINNABLE_SEEDS[key]?.length ?? 0) > 0;
+}
+
 /** A random seed from the bundled list of deals the solver has won, if there is one. */
 export function listedSeed(
   variant: Variant,
