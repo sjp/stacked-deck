@@ -1,0 +1,110 @@
+/*
+ * Colour tokens. Light is the default; dark applies when the system prefers it, unless
+ * settings force a theme with data-theme on <html>.
+ */
+:root {
+  color-scheme: light;
+  --bg: #e9efe9;
+  --fg: #142019;
+  --muted: #4a5a50;
+  --surface: #ffffff;
+  --surface-2: #f1f4f1;
+  --border: #c5d0c8;
+  --accent: #1d6b45;
+  --accent-fg: #ffffff;
+  --danger: #b3261e;
+  --focus: #1d4fd8;
+
+  --felt: #2f7a52;
+  --felt-shade: #286a47;
+  --felt-fg: #f1f7f3;
+  --felt-slot: rgb(255 255 255 / 0.22);
+
+  --card-face: #ffffff;
+  --card-edge: rgb(0 0 0 / 0.28);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --card-back-1: #1f4fa3;
+  --card-back-2: #3d72c9;
+  --card-back-edge: #ffffff;
+  --highlight: #ffcc33;
+  --target: #7fe3a8;
+
+  --suit-spades: #1a1a1a;
+  --suit-clubs: #1a1a1a;
+  --suit-hearts: #c0262d;
+  --suit-diamonds: #c0262d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0c1410;
+    --fg: #e3ebe6;
+    --muted: #9fb0a6;
+    --surface: #18221c;
+    --surface-2: #202c25;
+    --border: #34443a;
+    --accent: #5fc48e;
+    --accent-fg: #06140c;
+    --danger: #ff8a80;
+    --focus: #8ab4ff;
+
+    --felt: #133a26;
+    --felt-shade: #10311f;
+    --felt-fg: #d9e7de;
+    --felt-slot: rgb(255 255 255 / 0.14);
+
+    --card-face: #e9e6de;
+    --card-edge: rgb(0 0 0 / 0.5);
+    --card-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+    --card-back-1: #3a2a6b;
+    --card-back-2: #5a46a0;
+    --card-back-edge: #d9d4f0;
+    --highlight: #ffd54f;
+    --target: #66d998;
+
+    --suit-spades: #151515;
+    --suit-clubs: #151515;
+    --suit-hearts: #a8141c;
+    --suit-diamonds: #a8141c;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c1410;
+  --fg: #e3ebe6;
+  --muted: #9fb0a6;
+  --surface: #18221c;
+  --surface-2: #202c25;
+  --border: #34443a;
+  --accent: #5fc48e;
+  --accent-fg: #06140c;
+  --danger: #ff8a80;
+  --focus: #8ab4ff;
+
+  --felt: #133a26;
+  --felt-shade: #10311f;
+  --felt-fg: #d9e7de;
+  --felt-slot: rgb(255 255 255 / 0.14);
+
+  --card-face: #e9e6de;
+  --card-edge: rgb(0 0 0 / 0.5);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  --card-back-1: #3a2a6b;
+  --card-back-2: #5a46a0;
+  --card-back-edge: #d9d4f0;
+  --highlight: #ffd54f;
+  --target: #66d998;
+
+  --suit-spades: #151515;
+  --suit-clubs: #151515;
+  --suit-hearts: #a8141c;
+  --suit-diamonds: #a8141c;
+}
+
+/* Four-colour deck: diamonds blue, clubs green. */
+:root[data-four-colour] {
+  --suit-diamonds: #1450b0;
+  --suit-clubs: #19642a;
+}

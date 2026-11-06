@@ -32,9 +32,8 @@ svg {
   display: block;
 }
 
-/* Base tokens */
+/* Base */
 :root {
-  color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --space-1: 4px;
@@ -42,16 +41,6 @@ svg {
   --space-3: 12px;
   --space-4: 16px;
   --radius: 8px;
-
-  --bg: #f3f5f2;
-  --fg: #16201a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1510;
-    --fg: #e6ece8;
-  }
 }
 
 body {
