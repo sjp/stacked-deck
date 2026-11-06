@@ -4,7 +4,8 @@ import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import { WINNABLE_SEEDS } from "../engine/winnableSeeds.ts";
 import type { LoadedGame } from "./gameStore.ts";
 import { loadSavedGame } from "./gameStore.ts";
-import { solveRandomDeal } from "./solverClient.ts";
+import { dailyStart } from "./daily.ts";
+import { firstWinnableSeed, solveRandomDeal } from "./solverClient.ts";
 import { newGame } from "./useGame.ts";
 
 /**
@@ -49,6 +50,24 @@ export async function findWinnableSeed(
 }
 
 /**
+ * The day's deal for a variant, the same on every device: the first seed from a hash of
+ * the date that the solver wins within a fixed node limit, or else a pick from the
+ * bundled list (or the hash itself if there is none). Daily deals use default options.
+ */
+export async function dailySeed(variant: Variant, date: string): Promise<number> {
+  const start = dailyStart(date, variant.id);
+  const options = variant.defaultOptions;
+  if (SOLVE_AT_RUNTIME.has(dealKey(variant, options))) {
+    const seed = await firstWinnableSeed(variant.id, options, start, 12, 40_000);
+    if (seed !== undefined) {
+      return seed;
+    }
+  }
+  const seeds = WINNABLE_SEEDS[dealKey(variant, options)] ?? [];
+  return seeds[start % Math.max(1, seeds.length)] ?? start;
+}
+
+/**
  * The saved game for a variant, or else a new deal: the requested seed, a listed winnable
  * one (instant, so the first screen needs no wait), or a random one.
  */
@@ -58,8 +77,9 @@ export function loadGame(
   options: VariantOptions,
   auto: AutoMoveOptions,
   winnableOnly: boolean,
+  daily?: string,
 ): LoadedGame {
-  const saved = loadSavedGame(variant, seed);
+  const saved = loadSavedGame(variant, seed, daily);
   if (saved !== undefined) {
     return saved;
   }

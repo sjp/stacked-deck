@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { recordDailyWin } from "./dailyStore.ts";
 import { emitFeedback } from "./feedback.ts";
 import { recordAbandon, recordLoss, recordWin, statsKey } from "./stats.ts";
 import { updateRecord } from "./statsStore.ts";
@@ -18,6 +19,7 @@ export function useGameOutcome(
   won: boolean,
   timer: Timer,
   hints: number,
+  daily?: string,
 ) {
   const recorded = useRef<number | undefined>(undefined);
   const [newBests, setNewBests] = useState<{ game: number; bests: readonly string[] }>();
@@ -29,10 +31,14 @@ export function useGameOutcome(
     }
     recorded.current = gameNumber;
     emitFeedback("win");
+    const elapsedMs = Math.round(timer.elapsed());
+    if (daily !== undefined) {
+      recordDailyWin(daily, game.variant.id, { elapsedMs, moves: moveCount(game) });
+    }
     let bests: string[] = [];
     updateRecord(key, (record) => {
       const result = recordWin(record, {
-        elapsedMs: Math.round(timer.elapsed()),
+        elapsedMs,
         moves: moveCount(game),
         score: game.variant.scored ? currentState(game).score : undefined,
         lowScoreWins: game.variant.lowScoreWins === true,
@@ -43,7 +49,7 @@ export function useGameOutcome(
       return result.record;
     });
     setNewBests({ game: gameNumber, bests });
-  }, [game, gameNumber, hints, key, timer, won]);
+  }, [daily, game, gameNumber, hints, key, timer, won]);
 
   /** Call before dealing again: counts the current game as lost or abandoned. */
   const end = useCallback(

@@ -4,7 +4,9 @@ import { parseSaved, restoreGame, toSaved } from "./savedGame.ts";
 import { readStored, removeStored, writeStored } from "./storage.ts";
 import type { Game } from "./useGame.ts";
 
-export const gameKey = (variantId: string): string => `game:${variantId}`;
+/** Daily deals have their own slot, so playing one never replaces a game in progress. */
+export const gameKey = (variantId: string, daily = false): string =>
+  daily ? `game:${variantId}:daily` : `game:${variantId}`;
 
 export interface LoadedGame {
   readonly game: Game;
@@ -12,10 +14,14 @@ export interface LoadedGame {
   readonly elapsedMs: number;
 }
 
-/** The saved game for a variant, unless a different seed was asked for. */
-export function loadSavedGame(variant: Variant, seed: number | undefined): LoadedGame | undefined {
-  const saved = parseSaved(readStored(gameKey(variant.id)));
-  if (saved === undefined || (seed !== undefined && seed !== saved.seed)) {
+/** The saved game for a variant (or its daily deal), unless a different deal was asked for. */
+export function loadSavedGame(
+  variant: Variant,
+  seed: number | undefined,
+  daily?: string,
+): LoadedGame | undefined {
+  const saved = parseSaved(readStored(gameKey(variant.id, daily !== undefined)));
+  if (saved === undefined || (seed !== undefined && seed !== saved.seed) || saved.daily !== daily) {
     return undefined;
   }
   const game = restoreGame(variant, saved);
@@ -23,11 +29,11 @@ export function loadSavedGame(variant: Variant, seed: number | undefined): Loade
 }
 
 export function saveGame(game: Game, extras: SaveExtras): void {
-  writeStored(gameKey(game.variant.id), toSaved(game, extras));
+  writeStored(gameKey(game.variant.id, extras.daily !== undefined), toSaved(game, extras));
 }
 
-export function clearGame(variantId: string): void {
-  removeStored(gameKey(variantId));
+export function clearGame(variantId: string, daily = false): void {
+  removeStored(gameKey(variantId, daily));
 }
 
 /** Variants with a saved game that has at least one move. */

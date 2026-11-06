@@ -8,16 +8,20 @@ import type { Timer } from "./useTimer.ts";
  * Saves the game after every change, and again when the page is hidden or unloaded
  * (iOS doesn't reliably fire beforeunload). A won game's save is removed.
  */
-export function useAutoSave(game: Game, hints: number, timer: Timer): void {
+export function useAutoSave(game: Game, hints: number, timer: Timer, daily?: string): void {
   const latest = useRef({ game, hints });
   const save = useCallback(() => {
     const current = latest.current;
     if (current.game.variant.isWon(currentState(current.game))) {
-      clearGame(current.game.variant.id);
+      clearGame(current.game.variant.id, daily !== undefined);
       return;
     }
-    saveGame(current.game, { hints: current.hints, elapsedMs: Math.round(timer.elapsed()) });
-  }, [timer]);
+    saveGame(current.game, {
+      hints: current.hints,
+      elapsedMs: Math.round(timer.elapsed()),
+      daily,
+    });
+  }, [daily, timer]);
 
   useEffect(() => {
     latest.current = { game, hints };
