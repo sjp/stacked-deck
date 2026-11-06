@@ -414,3 +414,73 @@ button.primary {
   color: var(--accent);
   font-weight: 700;
 }
+
+.clock {
+  min-width: 3.5em;
+  text-align: end;
+}
+
+/* Pages (stats, daily) */
+.page {
+  min-height: 100%;
+  max-width: 1000px;
+  margin-inline: auto;
+  padding: calc(var(--space-4) + env(safe-area-inset-top))
+    calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--space-4) + env(safe-area-inset-bottom))
+    calc(var(--space-4) + env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.page-header h1 {
+  font-size: 1.5rem;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.stats-table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  text-align: end;
+}
+
+.stats-table th[scope="row"],
+.stats-table thead th:first-child {
+  text-align: start;
+}
+
+.stats-table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.empty,
+.note {
+  color: var(--muted);
+}
+
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--accent-fg);
+}

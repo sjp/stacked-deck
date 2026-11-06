@@ -3,6 +3,7 @@ import { getVariant, VARIANTS } from "../engine/variants/index.ts";
 import { GameScreen } from "./GameScreen.tsx";
 import { HomeScreen } from "./HomeScreen.tsx";
 import { SettingsProvider } from "./SettingsProvider.tsx";
+import { StatsScreen } from "./StatsScreen.tsx";
 import { variantsInProgress } from "./gameStore.ts";
 import { UpdateToast } from "./UpdateToast.tsx";
 import { useRoute } from "./useRoute.ts";
@@ -28,6 +29,9 @@ function Screen() {
     if (variant !== undefined) {
       return <GameScreen key={variant.id} variant={variant} seed={route.seed} />;
     }
+  }
+  if (route.name === "stats") {
+    return <StatsScreen />;
   }
   return <HomeScreen inProgress={variantsInProgress(VARIANTS)} />;
 }

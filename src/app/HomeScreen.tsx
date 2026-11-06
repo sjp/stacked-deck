@@ -84,7 +84,12 @@ export function HomeScreen({ inProgress = NONE }: Props) {
     <main className="home">
       <header className="home-header">
         <h1>Stacked Deck</h1>
-        <InstallButton />
+        <nav className="home-links" aria-label="More">
+          <InstallButton />
+          <a className="button" href={routeHash({ name: "stats" })}>
+            Stats
+          </a>
+        </nav>
       </header>
       <ul className="variant-list">
         {VARIANTS.map((variant) => (
