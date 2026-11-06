@@ -148,6 +148,28 @@
       }
     },
     {
+      // The engine is plain TypeScript: no React, no DOM.
+      "files": ["src/engine/**"],
+      "env": { "browser": false, "es2024": true },
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "react-dom/*"],
+                "message": "The engine must not depend on React."
+              },
+              {
+                "group": ["**/ui/**", "**/app/**"],
+                "message": "The engine must not depend on the UI."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["vite.config.ts"],
       "env": { "browser": false, "node": true }
     }

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.engine.tsbuildinfo",
+    /* No DOM: the engine is plain TypeScript that also runs in workers and Node. */
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/engine"]
+}
