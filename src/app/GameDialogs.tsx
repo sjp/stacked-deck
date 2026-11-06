@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react";
-import type { Card } from "../engine/cards.ts";
+import type { GameState } from "../engine/types.ts";
+import { Dialog } from "../ui/Dialog.tsx";
 import { WinAnimation } from "../ui/WinAnimation.tsx";
-import type { WinPhase } from "./celebration.ts";
+import { cardsForCelebration, useWinCelebration } from "./celebration.ts";
 import { SettingsDialog } from "./SettingsDialog.tsx";
 import type { WinSummary } from "./WinDialog.tsx";
 import { WinDialog } from "./WinDialog.tsx";
@@ -9,34 +10,62 @@ import { WinDialog } from "./WinDialog.tsx";
 interface Props {
   readonly settings: ComponentProps<typeof SettingsDialog>;
   readonly win: {
-    readonly phase: WinPhase | undefined;
-    readonly cards: readonly Card[];
-    readonly summary: WinSummary | undefined;
-    readonly onPhase: (phase: WinPhase) => void;
+    readonly won: boolean;
+    readonly state: GameState;
+    readonly animate: boolean;
+    readonly summary: WinSummary;
     readonly onNewGame: () => void;
+  };
+  readonly noMoves: {
+    readonly open: boolean;
+    readonly canUndo: boolean;
+    /** Gives up: the game counts as lost. */
+    readonly onNewGame: () => void;
+    readonly onUndo: () => void;
+    readonly onClose: () => void;
   };
 }
 
-/** The game screen's overlays: settings, the win celebration and the win summary. */
-export function GameDialogs({ settings, win }: Props) {
+/** The game screen's overlays: settings, the win celebration and the stuck prompt. */
+export function GameDialogs({ settings, win, noMoves }: Props) {
+  const celebration = useWinCelebration(win.won, win.state, win.animate);
   return (
     <>
       <SettingsDialog {...settings} />
-      {win.phase === "animating" ? (
+      {celebration.phase === "animating" ? (
         <WinAnimation
-          cards={win.cards}
+          cards={cardsForCelebration(win.state)}
           onDone={() => {
-            win.onPhase("dialog");
+            celebration.setPhase("dialog");
           }}
         />
       ) : undefined}
       <WinDialog
-        summary={win.phase === "dialog" ? win.summary : undefined}
+        summary={celebration.phase === "dialog" ? win.summary : undefined}
         onNewGame={win.onNewGame}
         onClose={() => {
-          win.onPhase("closed");
+          celebration.setPhase("closed");
         }}
       />
+      <Dialog open={noMoves.open && !win.won} title="No useful moves" onClose={noMoves.onClose}>
+        <p>Only going through the stock is left. Start a new game, or undo and try another way.</p>
+        <div className="dialog-actions">
+          <button type="button" className="primary" onClick={noMoves.onNewGame}>
+            New game
+          </button>
+          <button
+            type="button"
+            className="button"
+            disabled={!noMoves.canUndo}
+            onClick={noMoves.onUndo}
+          >
+            Undo
+          </button>
+          <button type="button" className="button" onClick={noMoves.onClose}>
+            Keep playing
+          </button>
+        </div>
+      </Dialog>
     </>
   );
 }

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import type { Variant } from "../engine/variant.ts";
 import { GameTable } from "../ui/GameTable.tsx";
 import { useSettings } from "./settingsContext.ts";
-import { cardsForCelebration, useWinCelebration } from "./celebration.ts";
 import { GameDialogs } from "./GameDialogs.tsx";
 import { GameStatus, Toolbar } from "./Toolbar.tsx";
 import { useGameSession } from "./useGameSession.ts";
+import { useHints } from "./useHints.ts";
 import { useCommandKeys } from "./useKeyDown.ts";
 import { navigate } from "./useRoute.ts";
 
@@ -26,7 +26,7 @@ export function GameScreen({ variant, seed }: Props) {
   });
   const { game, state, start, won } = session;
 
-  const celebration = useWinCelebration(won, state, settings.animation !== "off");
+  const hints = useHints(variant, state, !won && !session.finishing);
 
   const [requestedSeed, setRequestedSeed] = useState(seed);
   if (seed !== requestedSeed) {
@@ -67,6 +67,7 @@ export function GameScreen({ variant, seed }: Props) {
         leftHanded={settings.leftHanded}
         smartTap={settings.smartTap}
         onPlay={session.play}
+        highlight={hints.highlight}
       />
       <Toolbar
         actions={[
@@ -89,6 +90,16 @@ export function GameScreen({ variant, seed }: Props) {
             label: "Restart",
             onClick: () => {
               start(game.options, game.seed);
+            },
+          },
+          {
+            icon: "hint",
+            label: "Hint",
+            disabled: won,
+            onClick: () => {
+              if (hints.next()) {
+                session.countHint();
+              }
             },
           },
           {
@@ -132,8 +143,9 @@ export function GameScreen({ variant, seed }: Props) {
           onNewGame: startNew,
         }}
         win={{
-          phase: celebration.phase,
-          cards: won ? cardsForCelebration(state) : [],
+          won,
+          state,
+          animate: settings.animation !== "off",
           summary: {
             variantId: variant.id,
             variantName: variant.name,
@@ -145,10 +157,18 @@ export function GameScreen({ variant, seed }: Props) {
             undos: game.undos,
             newBests: session.newBests,
           },
-          onPhase: celebration.setPhase,
           onNewGame: () => {
             startNew();
           },
+        }}
+        noMoves={{
+          open: hints.noUsefulMoves && !settingsOpen,
+          canUndo: session.canUndo,
+          onNewGame: () => {
+            start(game.options, undefined, "loss");
+          },
+          onUndo: session.undo,
+          onClose: hints.dismiss,
         }}
       />
     </div>
