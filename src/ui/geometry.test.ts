@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "../engine/cards.ts";
 import { makeCards, withFace } from "../engine/cards.ts";
-import { fanOffsets, fitCardWidth, MAX_CARD_WIDTH } from "./geometry.ts";
+import { VARIANTS } from "../engine/variants/index.ts";
+import { computeGeometry, fanOffsets, fitCardWidth, LIFT_Z, MAX_CARD_WIDTH } from "./geometry.ts";
 
 const cards = (up: number, down: number): Card[] =>
   makeCards()
@@ -45,4 +46,16 @@ describe("fanOffsets", () => {
     const total = offsets.reduce((sum, offset) => sum + offset, 0);
     expect(total).toBeLessThanOrEqual(150.0001);
   });
+});
+
+describe("computeGeometry", () => {
+  it.each(VARIANTS.map((variant) => [variant.id, variant] as const))(
+    "stacks every %s card below the lift for moving cards",
+    (_id, variant) => {
+      const state = variant.deal(1, variant.defaultOptions);
+      const layout = variant.layout(state, { landscape: false, leftHanded: false });
+      const { cards: placed } = computeGeometry(state, layout, { width: 400, height: 800 });
+      expect(Math.max(...placed.map((placement) => placement.z))).toBeLessThan(LIFT_Z);
+    },
+  );
 });

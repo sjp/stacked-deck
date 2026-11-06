@@ -7,6 +7,8 @@ export const CARD_RATIO = 7 / 5;
 export const COMPACT_CARD_WIDTH = 60;
 /** Cards never grow beyond this, so a large screen doesn't show huge cards. */
 export const MAX_CARD_WIDTH = 120;
+/** Above every resting card, so a card in motion never slides underneath one. */
+export const LIFT_Z = 5000;
 
 /** Fan offsets as fractions of the card height. */
 const FAN = {
@@ -33,6 +35,7 @@ export interface CardPlacement {
   readonly index: number;
   readonly x: number;
   readonly y: number;
+  /** Stacking order: piles in layout order, each from the bottom card up. */
   readonly z: number;
 }
 
@@ -136,7 +139,7 @@ export function computeGeometry(state: GameState, layout: TableLayout, size: Siz
   const bases = new Map<PileId, Rect>();
   const byId = new Map(state.piles.map((pile) => [pile.id, pile]));
 
-  layout.piles.forEach((pileLayout, order) => {
+  layout.piles.forEach((pileLayout) => {
     const pile = byId.get(pileLayout.id);
     if (pile === undefined) {
       return;
@@ -161,7 +164,7 @@ export function computeGeometry(state: GameState, layout: TableLayout, size: Siz
         index,
         x: Math.round(position.x),
         y: Math.round(position.y),
-        z: order * 200 + index + 1,
+        z: placements.length + 1,
       });
     });
     piles.set(pile.id, { x: base.x, y: base.y, width: right - base.x, height: bottom - base.y });

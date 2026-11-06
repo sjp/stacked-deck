@@ -48,6 +48,7 @@
   will-change: transform;
 }
 
+/* LIFT_Z in geometry.ts: above every resting card. */
 .card-slot.moving {
   z-index: 5000 !important;
 }

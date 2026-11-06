@@ -6,6 +6,7 @@ import type { GameState, PileId } from "../engine/types.ts";
 import type { TableLayout } from "../engine/variant.ts";
 import { CardView } from "./CardView.tsx";
 import type { CardPlacement, TableGeometry } from "./geometry.ts";
+import { LIFT_Z } from "./geometry.ts";
 import type { CardRef, DragView } from "./useTableInteraction.ts";
 
 export interface Highlight {
@@ -25,9 +26,6 @@ interface CardSlotProps {
   readonly hinted: boolean;
   readonly shaking: boolean;
 }
-
-/** Raised above other cards while it travels, so a moving card never slides underneath. */
-const LIFT_Z = 5000;
 
 const CardSlot = memo(function CardSlot({
   placement,
