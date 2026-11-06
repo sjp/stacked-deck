@@ -5,6 +5,7 @@ import { MOVE_MS, parseSettings } from "./settings.ts";
 import { SettingsContext } from "./settingsContext.ts";
 import { readStored, writeStored } from "./storage.ts";
 import { applyCardStyle, applyTheme } from "./theme.ts";
+import { useFeedbackOutputs } from "./useFeedbackOutputs.ts";
 
 const loadSettings = (): Settings => parseSettings(readStored("settings"));
 const saveSettings = (settings: Settings): void => {
@@ -33,6 +34,8 @@ export function SettingsProvider({ children, load = loadSettings, save = saveSet
   useEffect(() => {
     save(settings);
   }, [save, settings]);
+
+  useFeedbackOutputs(settings.sound, settings.volume, settings.haptics);
 
   const update = useCallback((changes: Partial<Settings>) => {
     setSettings((previous) => ({ ...previous, ...changes }));

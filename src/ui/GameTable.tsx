@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { emitFeedback } from "../app/feedback.ts";
 import { describeMove } from "../engine/describe.ts";
 import type { GameState, Move } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
@@ -77,6 +78,18 @@ export function GameTable({
     },
     disabled: dealing,
   });
+
+  // A whole run going up at once (Spider) gets its own sound.
+  const foundationCards = state.piles
+    .filter((pile) => pile.kind === "foundation")
+    .reduce((sum, pile) => sum + pile.cards.length, 0);
+  const previousFoundation = useRef(foundationCards);
+  useEffect(() => {
+    if (foundationCards - previousFoundation.current >= 13) {
+      emitFeedback("complete");
+    }
+    previousFoundation.current = foundationCards;
+  }, [foundationCards]);
 
   const [rawCursor, setCursor] = useState<CardRef>();
   const cursor =
