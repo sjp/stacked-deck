@@ -55,7 +55,7 @@ export function hintScore(variant: Variant, state: GameState, move: Move): numbe
     // Empties a column; pointless if it just moves to another empty one.
     return target.cards.length === 0 ? 0 : 300;
   }
-  if (source.kind === "tableau" && below?.faceUp === true) {
+  if (source.kind === "tableau" && below?.faceUp === true && below.rank === card.rank + 1) {
     // Moving a run off one valid parent onto another just shuffles it around, unless the
     // card underneath can then go somewhere useful.
     const after = variant.applyMove(state, move);
@@ -76,7 +76,9 @@ export function hintScore(variant: Variant, state: GameState, move: Move): numbe
   if (target.kind === "cell") {
     return USEFUL;
   }
-  return 200;
+  // Building on a card of the same suit keeps runs together (it matters most in Spider).
+  const top = target.cards.at(-1);
+  return top?.suit === card.suit ? 260 : 200;
 }
 
 /** Legal moves worth suggesting, best first. Moves that make no progress are left out. */
