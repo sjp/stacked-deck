@@ -49,6 +49,10 @@ const CardSlot = memo(function CardSlot({
     if (element === null || last === undefined || (last.x === x && last.y === y) || dragging) {
       return undefined;
     }
+    // With no transition (reduced motion) the move is instant: no slide, no lift.
+    if (getComputedStyle(element).transitionDuration === "0s") {
+      return undefined;
+    }
     // Start from the old position explicitly: React moves the node when a card changes
     // places in the list (onto a later pile), and a moved node would otherwise jump.
     element.style.transition = "none";
@@ -59,11 +63,18 @@ const CardSlot = memo(function CardSlot({
     element.classList.add("moving");
     const done = () => {
       element.classList.remove("moving");
+      element.removeEventListener("transitionend", onEnd);
     };
-    element.addEventListener("transitionend", done, { once: true });
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target === element && event.propertyName === "transform") {
+        done();
+      }
+    };
+    element.addEventListener("transitionend", onEnd);
     const timer = setTimeout(done, 1000);
     return () => {
       clearTimeout(timer);
+      element.removeEventListener("transitionend", onEnd);
     };
   }, [x, y, dragging]);
 
