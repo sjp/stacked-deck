@@ -49,3 +49,23 @@ export async function solverHint(
   const response = await ask({ type: "hint", id: nextId++, variant, state, budgetMs });
   return response?.type === "hint" ? response.move : undefined;
 }
+
+/** The first seed from `start` the solver wins within a node limit (deterministic). */
+export async function firstWinnableSeed(
+  variant: string,
+  options: VariantOptions,
+  start: number,
+  count: number,
+  maxNodes: number,
+): Promise<number | undefined> {
+  const response = await ask({
+    type: "first",
+    id: nextId++,
+    variant,
+    options,
+    start,
+    count,
+    maxNodes,
+  });
+  return response?.type === "first" ? response.seed : undefined;
+}
