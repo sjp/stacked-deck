@@ -106,6 +106,46 @@ function inRun(ref: CardRef | undefined, pile: PileId, index: number): boolean {
   return ref?.pile === pile && index >= ref.index && ref.index >= 0;
 }
 
+/** A translucent copy of the hinted card that glides to its destination. */
+function HintGhost({
+  highlight,
+  layout,
+  geometry,
+}: {
+  readonly highlight: Highlight | undefined;
+  readonly layout: TableLayout;
+  readonly geometry: TableGeometry;
+}) {
+  const from = highlight?.from;
+  const to = highlight?.to;
+  if (from === undefined || to === undefined) {
+    return undefined;
+  }
+  const source = geometry.cards.find(
+    (placement) => placement.pile === from.pile && placement.index === from.index,
+  );
+  const top = geometry.cards.findLast((placement) => placement.pile === to);
+  const base = geometry.bases.get(to);
+  if (source === undefined || base === undefined) {
+    return undefined;
+  }
+  const fan = layout.piles.find((pile) => pile.id === to)?.fan;
+  const endX = top?.x ?? base.x;
+  const endY =
+    (top?.y ?? base.y) + (top !== undefined && fan === "down" ? geometry.cardHeight * 0.25 : 0);
+  const style: CSSProperties = {
+    "--gx0": `${source.x}px`,
+    "--gy0": `${source.y}px`,
+    "--gx1": `${endX}px`,
+    "--gy1": `${endY}px`,
+  };
+  return (
+    <div key={`${from.pile}:${from.index}:${to}`} className="hint-ghost" style={style}>
+      <CardView card={source.card} compact={geometry.compact} />
+    </div>
+  );
+}
+
 export function Table({
   state,
   layout,
@@ -141,7 +181,13 @@ export function Table({
         return (
           <div
             key={pileLayout.id}
-            className={isTarget ? "pile-base target" : "pile-base"}
+            className={[
+              "pile-base",
+              isTarget && "target",
+              highlight?.from?.pile === pileLayout.id && highlight.from.index < 0 && "hinted",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={{ transform: `translate(${base.x}px, ${base.y}px)` }}
             data-pile={pileLayout.id}
             data-index={-1}
@@ -170,6 +216,7 @@ export function Table({
           />
         );
       })}
+      <HintGhost highlight={highlight} layout={layout} geometry={geometry} />
     </div>
   );
 }
