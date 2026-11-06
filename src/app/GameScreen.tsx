@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { VariantOptions } from "../engine/types.ts";
-import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import type { Variant } from "../engine/variant.ts";
 import { GameTable } from "../ui/GameTable.tsx";
-import { optionsFor } from "./settings.ts";
 import { useSettings } from "./settingsContext.ts";
 import { SettingsDialog } from "./SettingsDialog.tsx";
 import { Toolbar } from "./Toolbar.tsx";
@@ -17,16 +16,11 @@ interface Props {
 
 export function GameScreen({ variant, seed }: Props) {
   const { settings } = useSettings();
-  const auto: AutoMoveOptions = useMemo(
-    () => ({ safeToFoundation: settings.autoFoundation }),
-    [settings.autoFoundation],
-  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const session = useGameSession({
     variant,
     seed,
-    options: optionsFor(settings, variant),
-    auto,
+    settings,
     paused: settingsOpen,
   });
   const { game, state, start } = session;
@@ -46,6 +40,7 @@ export function GameScreen({ variant, seed }: Props) {
       document.title = "Stacked Deck";
     };
   }, [variant.name]);
+
 
   const startNew = (options: VariantOptions = game.options) => {
     start(options, undefined);

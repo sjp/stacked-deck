@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import { parseSaved, restoreGame, toSaved } from "./savedGame.ts";
+import type { Settings } from "./settings.ts";
+import { optionsFor } from "./settings.ts";
 import { readStored, removeStored, writeStored } from "./storage.ts";
 import type { Game } from "./useGame.ts";
 import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
@@ -35,15 +37,18 @@ function load(
 interface Options {
   readonly variant: Variant;
   readonly seed: number | undefined;
-  readonly options: VariantOptions;
-  readonly auto: AutoMoveOptions;
+  readonly settings: Settings;
   /** Pause the timer (a dialog is open). */
   readonly paused: boolean;
 }
 
 /** A game together with its timer, hint count and saving. */
-export function useGameSession({ variant, seed, options, auto, paused }: Options) {
-  const [initial] = useState(() => load(variant, seed, options, auto));
+export function useGameSession({ variant, seed, settings, paused }: Options) {
+  const auto: AutoMoveOptions = useMemo(
+    () => ({ safeToFoundation: settings.autoFoundation }),
+    [settings.autoFoundation],
+  );
+  const [initial] = useState(() => load(variant, seed, optionsFor(settings, variant), auto));
   const { game, dispatch, replace } = useGame(() => initial.game);
   const [hints, setHints] = useState(initial.hints);
   const timer = useTimer(initial.elapsedMs);
