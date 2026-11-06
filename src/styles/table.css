@@ -1,0 +1,91 @@
+.table {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  --drag-x: 0px;
+  --drag-y: 0px;
+  --move-ms: 180ms;
+}
+
+.pile-base,
+.card-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+}
+
+.pile-base {
+  border-radius: calc(var(--card-w) * 0.07);
+  box-shadow: inset 0 0 0 2px var(--felt-slot);
+  display: grid;
+  place-items: center;
+  color: var(--felt-slot);
+  font-weight: 700;
+  font-size: calc(var(--card-w) * 0.4);
+}
+
+.pile-base.target {
+  box-shadow: inset 0 0 0 3px var(--target);
+}
+
+.card-slot {
+  transition: transform var(--move-ms) ease-out;
+  will-change: transform;
+}
+
+.card-slot.moving {
+  z-index: 5000 !important;
+}
+
+.card-slot.dragging {
+  transition: none;
+  translate: var(--drag-x) var(--drag-y);
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.35));
+}
+
+.card-slot.selected .card,
+.card-slot.hinted .card {
+  box-shadow:
+    0 0 0 2px var(--highlight),
+    0 0 10px 2px var(--highlight);
+}
+
+.card-slot.target .card {
+  box-shadow:
+    0 0 0 3px var(--target),
+    var(--card-shadow);
+}
+
+.card-slot.shake .card {
+  animation: shake 0.35s ease-in-out;
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    translate: -4px 0;
+  }
+  40%,
+  80% {
+    translate: 4px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table {
+    --move-ms: 0ms;
+  }
+
+  .card-slot.shake .card {
+    animation: none;
+    outline: 2px solid var(--danger);
+  }
+}
