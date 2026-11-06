@@ -6,6 +6,7 @@ import { useSettings } from "./settingsContext.ts";
 import { SettingsDialog } from "./SettingsDialog.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { useGameSession } from "./useGameSession.ts";
+import { useCommandKeys } from "./useKeyDown.ts";
 import { navigate } from "./useRoute.ts";
 
 interface Props {
@@ -41,6 +42,7 @@ export function GameScreen({ variant, seed }: Props) {
     };
   }, [variant.name]);
 
+  useCommandKeys({ undo: session.undo, redo: session.redo }, !settingsOpen);
 
   const startNew = (options: VariantOptions = game.options) => {
     start(options, undefined);
