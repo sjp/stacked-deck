@@ -1,4 +1,5 @@
 .card {
+  display: block;
   position: absolute;
   inset: 0;
   border-radius: calc(var(--card-w, 72px) * 0.07);

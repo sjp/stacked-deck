@@ -1,6 +1,7 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import type { CSSProperties, PointerEventHandler, RefObject } from "react";
+import type { CSSProperties, KeyboardEventHandler, PointerEventHandler, RefObject } from "react";
 import type { Card } from "../engine/cards.ts";
+import { cardLabel, pileLabel, pileName } from "../engine/describe.ts";
 import type { GameState, PileId } from "../engine/types.ts";
 import type { TableLayout } from "../engine/variant.ts";
 import { CardView } from "./CardView.tsx";
@@ -14,6 +15,9 @@ export interface Highlight {
 
 interface CardSlotProps {
   readonly placement: CardPlacement;
+  readonly label: string;
+  /** The keyboard cursor is here, so this card takes part in tab order. */
+  readonly focusable: boolean;
   readonly compact: boolean;
   readonly selected: boolean;
   readonly dragging: boolean;
@@ -27,6 +31,8 @@ const LIFT_Z = 5000;
 
 const CardSlot = memo(function CardSlot({
   placement,
+  label,
+  focusable,
   compact,
   selected,
   dragging,
@@ -34,7 +40,7 @@ const CardSlot = memo(function CardSlot({
   hinted,
   shaking,
 }: CardSlotProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
   const previous = useRef<{ x: number; y: number } | undefined>(undefined);
   const { x, y, z, card } = placement;
 
@@ -71,16 +77,20 @@ const CardSlot = memo(function CardSlot({
     zIndex: dragging ? LIFT_Z * 2 + z : z,
   };
   return (
-    <div
+    <button
       ref={ref}
+      type="button"
       className={className}
       style={style}
+      tabIndex={focusable ? 0 : -1}
+      aria-label={label}
+      aria-pressed={selected}
       data-pile={placement.pile}
       data-index={placement.index}
       data-card={card.id}
     >
       <CardView card={card} compact={compact} />
-    </div>
+    </button>
   );
 });
 
@@ -92,13 +102,15 @@ interface TableProps {
   readonly drag: DragView | undefined;
   readonly shaking: CardRef | undefined;
   readonly highlight?: Highlight;
-  readonly tableRef: RefObject<HTMLDivElement | null>;
+  readonly cursor?: CardRef | undefined;
+  readonly tableRef: RefObject<HTMLElement | null>;
   readonly handlers: {
     readonly onPointerDown: PointerEventHandler<HTMLElement>;
     readonly onPointerMove: PointerEventHandler<HTMLElement>;
     readonly onPointerUp: PointerEventHandler<HTMLElement>;
     readonly onPointerCancel: PointerEventHandler<HTMLElement>;
     readonly onLostPointerCapture: PointerEventHandler<HTMLElement>;
+    readonly onKeyDown?: KeyboardEventHandler<HTMLElement>;
   };
 }
 
@@ -140,7 +152,12 @@ function HintGhost({
     "--gy1": `${endY}px`,
   };
   return (
-    <div key={`${from.pile}:${from.index}:${to}`} className="hint-ghost" style={style}>
+    <div
+      key={`${from.pile}:${from.index}:${to}`}
+      className="hint-ghost"
+      style={style}
+      aria-hidden="true"
+    >
       <CardView card={source.card} compact={geometry.compact} />
     </div>
   );
@@ -154,6 +171,7 @@ export function Table({
   drag,
   shaking,
   highlight,
+  cursor,
   tableRef,
   handlers,
 }: TableProps) {
@@ -165,8 +183,9 @@ export function Table({
   };
 
   return (
-    <div
+    <section
       ref={tableRef}
+      aria-label="Card table"
       className={drag === undefined ? "table" : "table is-dragging"}
       style={style}
       {...handlers}
@@ -179,7 +198,8 @@ export function Table({
         const isTarget =
           drag?.targets.has(pileLayout.id) === true || highlight?.to === pileLayout.id;
         return (
-          <div
+          <button
+            type="button"
             key={pileLayout.id}
             className={[
               "pile-base",
@@ -189,6 +209,8 @@ export function Table({
               .filter(Boolean)
               .join(" ")}
             style={{ transform: `translate(${base.x}px, ${base.y}px)` }}
+            tabIndex={cursor?.pile === pileLayout.id && cursor.index === -1 ? 0 : -1}
+            aria-label={pileLabel(state, pileLayout.id)}
             data-pile={pileLayout.id}
             data-index={-1}
             data-kind={kinds.get(pileLayout.id)}
@@ -196,7 +218,7 @@ export function Table({
             {pileLayout.emptyLabel === undefined ? undefined : (
               <span className="pile-label">{pileLayout.emptyLabel}</span>
             )}
-          </div>
+          </button>
         );
       })}
       {geometry.cards.map((placement) => {
@@ -207,6 +229,8 @@ export function Table({
           <CardSlot
             key={card.id}
             placement={placement}
+            label={`${cardLabel(card)}, ${pileName(state, pile)}`}
+            focusable={cursor?.pile === pile && cursor.index === index}
             compact={geometry.compact}
             selected={inRun(selection, pile, index)}
             dragging={inRun(drag, pile, index)}
@@ -217,6 +241,6 @@ export function Table({
         );
       })}
       <HintGhost highlight={highlight} layout={layout} geometry={geometry} />
-    </div>
+    </section>
   );
 }

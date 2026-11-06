@@ -11,11 +11,11 @@ interface CardViewProps {
 /** One card, face up or down. It fills its container; the table sets the size. */
 export const CardView = memo(function CardView({ card, compact }: CardViewProps) {
   if (!card.faceUp) {
-    return <div className="card card-back" />;
+    return <span className="card card-back" />;
   }
   return (
-    <div className={`card card-front suit-${card.suit}`}>
+    <span className={`card card-front suit-${card.suit}`}>
       <CardFace rank={card.rank} suit={card.suit} compact={compact} />
-    </div>
+    </span>
   );
 });
