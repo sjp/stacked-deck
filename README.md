@@ -1,5 +1,8 @@
 # Stacked Deck
 
+[![CI](https://github.com/sjp/stacked-deck/actions/workflows/ci.yml/badge.svg)](https://github.com/sjp/stacked-deck/actions/workflows/ci.yml)
+[![Deploy](https://github.com/sjp/stacked-deck/actions/workflows/deploy.yml/badge.svg)](https://github.com/sjp/stacked-deck/actions/workflows/deploy.yml)
+
 Solitaire card games for phones and desktop: Klondike, Spider, FreeCell, Pyramid, TriPeaks
 and Golf. Installable as an app and playable offline.
 
@@ -30,43 +33,3 @@ npm run check    # oxlint, oxfmt --check and tsc
 npm run fmt      # format with oxfmt
 npm test         # vitest
 ```
-
-## Code layout
-
-```text
-src/
-  engine/        game rules in plain TypeScript, with no React or DOM
-    variants/    one folder per game, each implementing the Variant interface
-  ui/            table, cards and pointer/keyboard interaction
-  app/           screens, settings, storage, stats, daily deals, solver worker
-  styles/        CSS, with theme colours as custom properties
-scripts/         Node scripts
-```
-
-Every deal comes from a 32-bit seed (`#/play/klondike?seed=123` opens one). The engine is
-pure: `applyMove(state, move)` returns a new state, and games are saved as the seed plus the
-moves made.
-
-## Winnable deal lists
-
-Some option sets are too slow to solve on a phone, so a list of deals the solver has won
-ships in `src/engine/winnableSeeds.ts`. Regenerate it with:
-
-```sh
-node scripts/find-winnable.ts
-```
-
-Use `--only <key>` (such as `spider:suits=2`) to search one option set and print the result,
-and `--write` to merge printed results into the file.
-
-## Deploying
-
-Pushing to `main` deploys the site to GitHub Pages: `.github/workflows/deploy.yml` runs
-`npm run check`, `npm test` and `npm run build`, then publishes `dist/`. The build uses a
-relative base path, so it works from a project subpath. `.github/workflows/ci.yml` runs the
-same checks on every push and pull request, and Dependabot keeps npm packages and action
-versions up to date.
-
-The built `index.html` carries a Content-Security-Policy `<meta>` tag, since Pages can't send
-headers. It is added at build time only (see `vite.config.ts`), because the dev server needs
-an inline script and a websocket that the policy forbids.
