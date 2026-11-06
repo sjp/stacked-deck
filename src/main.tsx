@@ -5,6 +5,7 @@ import "./styles/theme.css";
 import "./styles/index.css";
 import "./styles/cards.css";
 import "./styles/table.css";
+import "./styles/app.css";
 
 const root = document.querySelector("#root");
 if (root === null) {

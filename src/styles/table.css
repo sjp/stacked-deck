@@ -10,7 +10,6 @@
   -webkit-tap-highlight-color: transparent;
   --drag-x: 0px;
   --drag-y: 0px;
-  --move-ms: 180ms;
 }
 
 .pile-base,
@@ -37,7 +36,7 @@
 }
 
 .card-slot {
-  transition: transform var(--move-ms) ease-out;
+  transition: transform var(--move-ms, 180ms) ease-out;
   will-change: transform;
 }
 

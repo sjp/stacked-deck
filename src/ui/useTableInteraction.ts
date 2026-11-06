@@ -95,7 +95,15 @@ export function useTableInteraction({
   onPlay,
   disabled = false,
 }: Options) {
-  const [selection, setSelection] = useState<CardRef>();
+  // A selection belongs to the state it was made in, so undo or a new deal clears it.
+  const [selected, setSelected] = useState<{ ref: CardRef; state: GameState }>();
+  const selection = selected?.state === state ? selected.ref : undefined;
+  const setSelection = useCallback(
+    (ref: CardRef | undefined) => {
+      setSelected(ref === undefined ? undefined : { ref, state });
+    },
+    [state],
+  );
   const [drag, setDrag] = useState<DragView>();
   const [shaking, setShaking] = useState<CardRef>();
   const press = useRef<Press | undefined>(undefined);
@@ -234,7 +242,7 @@ export function useTableInteraction({
       emitFeedback("pickup");
       setSelection(ref);
     },
-    [playMove, selection, shake, smartMove, smartTap, state, variant],
+    [playMove, selection, setSelection, shake, smartMove, smartTap, state, variant],
   );
 
   const onPointerDown = useCallback(
@@ -257,7 +265,7 @@ export function useTableInteraction({
         dragging: false,
       };
     },
-    [disabled, state, variant],
+    [disabled, setSelection, state, variant],
   );
 
   const onPointerMove = useCallback(
@@ -283,7 +291,7 @@ export function useTableInteraction({
       }
       setDragOffset(dx, dy);
     },
-    [setDragOffset, state, variant],
+    [setDragOffset, setSelection, state, variant],
   );
 
   const finishDrag = useCallback(
@@ -351,15 +359,10 @@ export function useTableInteraction({
     press.current = undefined;
   }, [setDragOffset]);
 
-  const clearSelection = useCallback(() => {
-    setSelection(undefined);
-  }, []);
-
   return {
     selection,
     drag,
     shaking,
-    clearSelection,
     handlers: {
       onPointerDown,
       onPointerMove,

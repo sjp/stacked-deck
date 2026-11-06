@@ -1,80 +1,144 @@
-import { useCallback, useRef } from "react";
-import type { Move } from "../engine/types.ts";
-import type { Variant } from "../engine/variant.ts";
-import { Table } from "../ui/Table.tsx";
-import { useGeometry } from "../ui/useGeometry.ts";
-import { useElementSize } from "../ui/useElementSize.ts";
-import { useTableInteraction } from "../ui/useTableInteraction.ts";
-import { randomSeed } from "./random.ts";
-import { currentState, newGame, useGame } from "./useGame.ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Move, VariantOptions } from "../engine/types.ts";
+import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import { GameTable } from "../ui/GameTable.tsx";
+import { optionsFor } from "./settings.ts";
+import { useSettings } from "./settingsContext.ts";
+import { SettingsDialog } from "./SettingsDialog.tsx";
+import { Toolbar } from "./Toolbar.tsx";
+import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
+import { navigate } from "./useRoute.ts";
 
-const AUTO = { safeToFoundation: true };
+interface Props {
+  readonly variant: Variant;
+  /** Deal this seed instead of a random one. */
+  readonly seed?: number | undefined;
+}
 
-export function GameScreen({ variant }: { readonly variant: Variant }) {
+export function GameScreen({ variant, seed }: Props) {
+  const { settings } = useSettings();
+  const auto: AutoMoveOptions = useMemo(
+    () => ({ safeToFoundation: settings.autoFoundation }),
+    [settings.autoFoundation],
+  );
   const { game, dispatch, replace } = useGame(() =>
-    newGame(variant, randomSeed(), variant.defaultOptions, AUTO),
+    newGame(variant, seed, optionsFor(settings, variant), auto),
   );
   const state = currentState(game);
-  const areaRef = useRef<HTMLDivElement>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
-  const size = useElementSize(areaRef);
-  const table = useGeometry(variant, state, size, false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const start = useCallback(
+    (options: VariantOptions, dealSeed: number | undefined) => {
+      replace(newGame(variant, dealSeed, options, auto));
+    },
+    [auto, replace, variant],
+  );
+
+  const [requestedSeed, setRequestedSeed] = useState(seed);
+  if (seed !== requestedSeed) {
+    // The URL asked for a different deal.
+    setRequestedSeed(seed);
+    if (seed !== undefined && seed !== game.seed) {
+      start(game.options, seed);
+    }
+  }
+
+  useEffect(() => {
+    document.title = `${variant.name} · Stacked Deck`;
+    return () => {
+      document.title = "Stacked Deck";
+    };
+  }, [variant.name]);
 
   const onPlay = useCallback(
     (move: Move) => {
       if (!variant.canMove(state, move)) {
         return false;
       }
-      dispatch({ type: "play", move, auto: AUTO });
+      dispatch({ type: "play", move, auto });
       return true;
     },
-    [dispatch, state, variant],
+    [auto, dispatch, state, variant],
   );
 
-  const interaction = useTableInteraction({
-    variant,
-    state,
-    geometry: table?.geometry,
-    smartTap: true,
-    tableRef,
-    onPlay,
-  });
+  const startNew = (options: VariantOptions = game.options) => {
+    start(options, undefined);
+    if (seed !== undefined) {
+      navigate({ name: "play", variant: variant.id }, true);
+    }
+  };
 
   return (
     <div className="game">
-      <div className="toolbar">
-        <button
-          type="button"
-          onClick={() => {
-            replace(newGame(variant, randomSeed(), game.options, AUTO));
-          }}
-        >
-          New game
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            dispatch({ type: "undo" });
-          }}
-        >
-          Undo
-        </button>
-        <span>Score {state.score}</span>
+      <div className="status">
+        <span className="status-name">{variant.name}</span>
+        {variant.scored ? <span>Score {state.score}</span> : undefined}
+        <span>Moves {moveCount(game)}</span>
       </div>
-      <div className="table-area" ref={areaRef}>
-        {table === undefined ? undefined : (
-          <Table
-            state={state}
-            layout={table.layout}
-            geometry={table.geometry}
-            selection={interaction.selection}
-            drag={interaction.drag}
-            shaking={interaction.shaking}
-            tableRef={tableRef}
-            handlers={interaction.handlers}
-          />
-        )}
-      </div>
+      <GameTable
+        variant={variant}
+        state={state}
+        leftHanded={settings.leftHanded}
+        smartTap={settings.smartTap}
+        onPlay={onPlay}
+      />
+      <Toolbar
+        actions={[
+          {
+            icon: "menu",
+            label: "Menu",
+            onClick: () => {
+              navigate({ name: "home" });
+            },
+          },
+          {
+            icon: "new",
+            label: "New game",
+            onClick: () => {
+              startNew();
+            },
+          },
+          {
+            icon: "restart",
+            label: "Restart",
+            onClick: () => {
+              start(game.options, game.seed);
+            },
+          },
+          {
+            icon: "undo",
+            label: "Undo",
+            disabled: !undoable(game),
+            onClick: () => {
+              dispatch({ type: "undo" });
+            },
+          },
+          {
+            icon: "redo",
+            label: "Redo",
+            disabled: !redoable(game),
+            onClick: () => {
+              dispatch({ type: "redo" });
+            },
+          },
+          {
+            icon: "settings",
+            label: "Settings",
+            onClick: () => {
+              setSettingsOpen(true);
+            },
+          },
+        ]}
+      />
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false);
+        }}
+        variant={variant}
+        currentOptions={game.options}
+        onNewGame={startNew}
+      />
     </div>
   );
 }

@@ -48,10 +48,6 @@ body {
   color: var(--fg);
 }
 
-.app {
-  padding: var(--space-4);
-}
-
 .gallery {
   padding: var(--space-4);
   background: var(--felt);

@@ -5,6 +5,7 @@ import type { History } from "../engine/history.ts";
 import { canRedo, canUndo, createHistory, pushHistory, redo, undo } from "../engine/history.ts";
 import type { GameState, Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import { randomSeed } from "./random.ts";
 
 export interface Game {
   readonly variant: Variant;
@@ -15,20 +16,30 @@ export interface Game {
   readonly undos: number;
 }
 
+/** Deals a new game; without a seed, the deal is random. */
 export function newGame(
   variant: Variant,
-  seed: number,
+  seed: number | undefined,
   options: VariantOptions,
   auto: AutoMoveOptions,
 ): Game {
-  const settled = settle(variant, variant.deal(seed, options), auto);
+  const dealt = variant.deal(seed ?? randomSeed(), options);
+  const settled = settle(variant, dealt, auto);
   return {
     variant,
-    seed,
+    seed: dealt.seed,
     options,
     history: createHistory<Step>({ moves: settled.moves, state: settled.state }),
     undos: 0,
   };
+}
+
+export function undoable(game: Game): boolean {
+  return canUndo(game.history);
+}
+
+export function redoable(game: Game): boolean {
+  return canRedo(game.history);
 }
 
 export function currentState(game: Game): GameState {
