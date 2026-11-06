@@ -2,10 +2,7 @@ import { lazy, Suspense } from "react";
 import { getVariant, VARIANTS } from "../engine/variants/index.ts";
 import { GameScreen } from "./GameScreen.tsx";
 import { HomeScreen } from "./HomeScreen.tsx";
-import type { Settings } from "./settings.ts";
-import { parseSettings } from "./settings.ts";
 import { SettingsProvider } from "./SettingsProvider.tsx";
-import { readStored, writeStored } from "./storage.ts";
 import { variantsInProgress } from "./gameStore.ts";
 import { UpdateToast } from "./UpdateToast.tsx";
 import { useRoute } from "./useRoute.ts";
@@ -35,14 +32,9 @@ function Screen() {
   return <HomeScreen inProgress={variantsInProgress(VARIANTS)} />;
 }
 
-const loadSettings = (): Settings => parseSettings(readStored("settings"));
-const saveSettings = (settings: Settings): void => {
-  writeStored("settings", settings);
-};
-
 export function App() {
   return (
-    <SettingsProvider load={loadSettings} save={saveSettings}>
+    <SettingsProvider>
       <Screen />
       <UpdateToast />
     </SettingsProvider>

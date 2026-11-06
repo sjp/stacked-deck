@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Settings } from "./settings.ts";
-import { defaultSettings, MOVE_MS } from "./settings.ts";
+import { MOVE_MS, parseSettings } from "./settings.ts";
 import { SettingsContext } from "./settingsContext.ts";
+import { readStored, writeStored } from "./storage.ts";
 import { applyCardStyle, applyTheme } from "./theme.ts";
+
+const loadSettings = (): Settings => parseSettings(readStored("settings"));
+const saveSettings = (settings: Settings): void => {
+  writeStored("settings", settings);
+};
 
 interface Props {
   readonly children: ReactNode;
@@ -11,7 +17,8 @@ interface Props {
   readonly save?: (settings: Settings) => void;
 }
 
-export function SettingsProvider({ children, load = defaultSettings, save }: Props) {
+/** Holds the settings, applies them to the page and saves every change. */
+export function SettingsProvider({ children, load = loadSettings, save = saveSettings }: Props) {
   const [settings, setSettings] = useState(load);
 
   useEffect(() => {
@@ -24,7 +31,7 @@ export function SettingsProvider({ children, load = defaultSettings, save }: Pro
     document.documentElement.style.setProperty("--move-ms", `${MOVE_MS[settings.animation]}ms`);
   }, [settings.animation]);
   useEffect(() => {
-    save?.(settings);
+    save(settings);
   }, [save, settings]);
 
   const update = useCallback((changes: Partial<Settings>) => {
