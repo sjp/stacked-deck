@@ -5,7 +5,9 @@ import type { GameState } from "../engine/types.ts";
 
 /** Foundation cards from the top down, taking one from each pile in turn. */
 export function cardsForCelebration(state: GameState): Card[] {
-  const foundations = pilesOfKind(state, "foundation").map((pile) => pile.cards);
+  // Games without foundations (TriPeaks, Golf) throw their waste pile instead.
+  const kind = pilesOfKind(state, "foundation").length > 0 ? "foundation" : "waste";
+  const foundations = pilesOfKind(state, kind).map((pile) => pile.cards);
   const cards: Card[] = [];
   const depth = Math.max(0, ...foundations.map((pile) => pile.length));
   for (let level = 1; level <= depth; level++) {

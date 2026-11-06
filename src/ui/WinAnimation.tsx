@@ -97,9 +97,12 @@ export function WinAnimation({ cards, onDone }: Props) {
     canvas.height = Math.ceil(height * scale);
     context.scale(scale, scale);
 
-    const origins = [...document.querySelectorAll('.pile-base[data-kind="foundation"]')].map(
-      (element) => element.getBoundingClientRect(),
-    );
+    const foundations = document.querySelectorAll('.pile-base[data-kind="foundation"]');
+    const origins = [
+      ...(foundations.length > 0
+        ? foundations
+        : document.querySelectorAll('.pile-base[data-kind="waste"]')),
+    ].map((element) => element.getBoundingClientRect());
     const cardWidth = origins[0]?.width ?? 72;
     const cardHeight = Math.round(cardWidth * CARD_RATIO);
     const queue = [...cards];
