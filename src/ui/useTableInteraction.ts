@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move, PileId } from "../engine/types.ts";
@@ -38,6 +38,8 @@ interface Options {
   readonly tableRef: RefObject<HTMLElement | null>;
   /** Plays a move; returns false if it was rejected. */
   readonly onPlay: (move: Move) => boolean;
+  /** Called when a move is refused. */
+  readonly onInvalid?: () => void;
   readonly disabled?: boolean;
 }
 
@@ -93,8 +95,13 @@ export function useTableInteraction({
   smartTap,
   tableRef,
   onPlay,
+  onInvalid,
   disabled = false,
 }: Options) {
+  const onInvalidRef = useRef(onInvalid);
+  useEffect(() => {
+    onInvalidRef.current = onInvalid;
+  }, [onInvalid]);
   // A selection belongs to the state it was made in, so undo or a new deal clears it.
   const [selected, setSelected] = useState<{ ref: CardRef; state: GameState }>();
   const selection = selected?.state === state ? selected.ref : undefined;
@@ -122,6 +129,7 @@ export function useTableInteraction({
 
   const shake = useCallback((ref: CardRef) => {
     emitFeedback("invalid");
+    onInvalidRef.current?.();
     setShaking(ref);
     setTimeout(() => {
       setShaking(undefined);
@@ -193,7 +201,7 @@ export function useTableInteraction({
   );
 
   const tap = useCallback(
-    (ref: CardRef) => {
+    (ref: CardRef, smart: boolean = smartTap) => {
       const now = performance.now();
       const previous = lastTap.current;
       const isDouble =
@@ -243,7 +251,7 @@ export function useTableInteraction({
         playMove(first);
         return;
       }
-      if (smartTap && moves.length > 0) {
+      if (smart && moves.length > 0) {
         smartMove(ref, moves);
         return;
       }
@@ -383,8 +391,30 @@ export function useTableInteraction({
     press.current = undefined;
   }, [setDragOffset]);
 
+  /** Sends a card to a foundation (or discards it), as a double-click would. */
+  const toFoundation = useCallback(
+    (ref: CardRef) => {
+      const up = variant
+        .tapMoves(state, ref.pile, ref.index)
+        .find((move) => isFoundationMove(state, move) || move.kind === "remove");
+      setSelection(undefined);
+      if (up === undefined || !playMove(up)) {
+        shake(ref);
+      }
+    },
+    [playMove, setSelection, shake, state, variant],
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelection(undefined);
+  }, [setSelection]);
+
   return {
     selection,
+    /** A tap or keyboard activation; keyboard play passes `smart: false` to pick up first. */
+    activate: tap,
+    toFoundation,
+    clearSelection,
     drag,
     shaking,
     message,
