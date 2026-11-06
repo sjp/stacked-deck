@@ -51,3 +51,14 @@ export function drawToWaste(state: GameState, stock: PileId, waste: PileId): Gam
     [waste]: [...getPile(state, waste).cards, withFace(card, true)],
   });
 }
+
+/**
+ * A solver key for waste-pile games: only the cards still in play, the stock size and
+ * the waste's top card matter, not the order of cards buried in the waste.
+ */
+export function wasteGameKey(state: GameState, waste: PileId): string {
+  const inPlay = state.piles
+    .filter((pile) => pile.id !== waste)
+    .map((pile) => pile.cards.map((card) => (card.faceUp ? card.id : ~card.id)).join(","));
+  return `${inPlay.join("|")}#${wasteTop(state, waste)?.id ?? ""}`;
+}

@@ -1,10 +1,16 @@
 import { makeCards, withFace } from "../../cards.ts";
 import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
-import { findPile, getPile, makePile, pilesKey, pilesOfKind, topCard } from "../../state.ts";
+import { findPile, getPile, makePile, pilesOfKind, topCard } from "../../state.ts";
 import type { GameState, Move, PileId, VariantOptions } from "../../types.ts";
 import type { LayoutContext, PileLayout, TableLayout, Variant } from "../../variant.ts";
 import type { WasteRules } from "../shared/waste.ts";
-import { canPlayOnWaste, drawToWaste, playToWaste, wasteTop } from "../shared/waste.ts";
+import {
+  canPlayOnWaste,
+  drawToWaste,
+  playToWaste,
+  wasteGameKey,
+  wasteTop,
+} from "../shared/waste.ts";
 
 const STOCK = "stock";
 const WASTE = "waste";
@@ -153,5 +159,5 @@ export const golf: Variant = {
       ? { kind: "move", from, index: getPile(state, from).cards.length - 1, to }
       : undefined,
   tapMoves,
-  stateKey: pilesKey,
+  stateKey: (state) => wasteGameKey(state, WASTE),
 };

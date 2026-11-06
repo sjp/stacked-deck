@@ -6,14 +6,19 @@ import {
   findPile,
   getPile,
   makePile,
-  pilesKey,
   topCard,
   withCounter,
   withPiles,
 } from "../../state.ts";
 import type { GameState, Move, PileId, VariantOptions } from "../../types.ts";
 import type { LayoutContext, PileLayout, TableLayout, Variant } from "../../variant.ts";
-import { canPlayOnWaste, drawToWaste, playToWaste, wasteTop } from "../shared/waste.ts";
+import {
+  canPlayOnWaste,
+  drawToWaste,
+  playToWaste,
+  wasteGameKey,
+  wasteTop,
+} from "../shared/waste.ts";
 
 const STOCK = "stock";
 const WASTE = "waste";
@@ -236,5 +241,5 @@ export const tripeaks: Variant = {
   dropMove: (state, from, _index, to) =>
     to === WASTE && canPlay(state, from) ? { kind: "move", from, index: 0, to } : undefined,
   tapMoves,
-  stateKey: pilesKey,
+  stateKey: (state) => wasteGameKey(state, WASTE),
 };
