@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
-import { loadGame } from "./gameStore.ts";
+import { findWinnableSeed, loadGame } from "./deals.ts";
 import type { Settings } from "./settings.ts";
 import { optionsFor } from "./settings.ts";
 import { useAutoFinish } from "./useAutoFinish.ts";
@@ -25,7 +25,9 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
     () => ({ safeToFoundation: settings.autoFoundation }),
     [settings.autoFoundation],
   );
-  const [initial] = useState(() => loadGame(variant, seed, optionsFor(settings, variant), auto));
+  const [initial] = useState(() =>
+    loadGame(variant, seed, optionsFor(settings, variant), auto, settings.winnableOnly),
+  );
   const { game, dispatch, replace } = useGame(() => initial.game);
   const [hints, setHints] = useState(initial.hints);
   const state = currentState(game);
@@ -44,27 +46,58 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   useAutoSave(game, hints, timer);
 
   const { end } = outcome;
-  const start = useCallback(
-    (dealOptions: VariantOptions, dealSeed: number | undefined, ending?: Ending) => {
-      end(ending ?? (variant.isStuck?.(state) === true ? "loss" : "abandon"));
+  const [dealing, setDealing] = useState(false);
+  const dealRequest = useRef(0);
+
+  const begin = useCallback(
+    (dealOptions: VariantOptions, dealSeed: number | undefined) => {
       setGameNumber((number) => number + 1);
       timer.reset();
       setHints(0);
       setFinishRequested(false);
       replace(newGame(variant, dealSeed, dealOptions, auto));
     },
-    [auto, end, replace, state, timer, variant],
+    [auto, replace, timer, variant],
+  );
+
+  /** Ends the current game (as lost or abandoned) and deals another. */
+  const start = useCallback(
+    (dealOptions: VariantOptions, dealSeed: number | undefined, ending?: Ending) => {
+      end(ending ?? (variant.isStuck?.(state) === true ? "loss" : "abandon"));
+      dealRequest.current += 1;
+      const request = dealRequest.current;
+      if (dealSeed !== undefined || !settings.winnableOnly) {
+        setDealing(false);
+        begin(dealOptions, dealSeed);
+        return;
+      }
+      setDealing(true);
+      const deal = async () => {
+        let found: number | undefined;
+        try {
+          found = await findWinnableSeed(variant, dealOptions);
+        } catch (error) {
+          console.warn("Could not find a winnable deal", error);
+        }
+        if (request === dealRequest.current) {
+          setDealing(false);
+          begin(dealOptions, found);
+        }
+      };
+      void deal();
+    },
+    [begin, end, settings.winnableOnly, state, variant],
   );
 
   const play = useCallback(
     (move: Move): boolean => {
-      if (won || !variant.canMove(state, move)) {
+      if (won || dealing || !variant.canMove(state, move)) {
         return false;
       }
       dispatch({ type: "play", move, auto });
       return true;
     },
-    [auto, dispatch, state, variant, won],
+    [auto, dealing, dispatch, state, variant, won],
   );
 
   return useMemo(
@@ -72,6 +105,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
       game,
       state,
       won,
+      dealing,
       moves: moveCount(game),
       canFinish,
       finishing,
@@ -95,6 +129,19 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
         setHints((count) => count + 1);
       },
     }),
-    [canFinish, dispatch, finishing, game, hints, outcome.newBests, play, start, state, timer, won],
+    [
+      canFinish,
+      dealing,
+      dispatch,
+      finishing,
+      game,
+      hints,
+      outcome.newBests,
+      play,
+      start,
+      state,
+      timer,
+      won,
+    ],
   );
 }

@@ -68,6 +68,7 @@ export function GameScreen({ variant, seed }: Props) {
         smartTap={settings.smartTap}
         onPlay={session.play}
         highlight={hints.highlight}
+        dealing={session.dealing}
       />
       <Toolbar
         actions={[

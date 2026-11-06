@@ -143,3 +143,29 @@
 .table-message:empty {
   display: none;
 }
+
+/* Shown only if finding a deal takes longer than a moment. */
+.dealing {
+  position: absolute;
+  inset: 0;
+  z-index: 9600;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.25);
+  opacity: 0;
+  animation: dealing-in 0.2s ease-out 0.3s forwards;
+}
+
+.dealing span {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.3);
+}
+
+@keyframes dealing-in {
+  to {
+    opacity: 1;
+  }
+}

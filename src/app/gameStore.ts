@@ -1,10 +1,8 @@
-import type { VariantOptions } from "../engine/types.ts";
-import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import type { Variant } from "../engine/variant.ts";
 import type { SaveExtras } from "./savedGame.ts";
 import { parseSaved, restoreGame, toSaved } from "./savedGame.ts";
 import { readStored, removeStored, writeStored } from "./storage.ts";
 import type { Game } from "./useGame.ts";
-import { newGame } from "./useGame.ts";
 
 export const gameKey = (variantId: string): string => `game:${variantId}`;
 
@@ -14,21 +12,14 @@ export interface LoadedGame {
   readonly elapsedMs: number;
 }
 
-/** The saved game for a variant, or a new deal if there is none (or it's for another seed). */
-export function loadGame(
-  variant: Variant,
-  seed: number | undefined,
-  options: VariantOptions,
-  auto: AutoMoveOptions,
-): LoadedGame {
+/** The saved game for a variant, unless a different seed was asked for. */
+export function loadSavedGame(variant: Variant, seed: number | undefined): LoadedGame | undefined {
   const saved = parseSaved(readStored(gameKey(variant.id)));
-  if (saved !== undefined && (seed === undefined || seed === saved.seed)) {
-    const game = restoreGame(variant, saved);
-    if (game !== undefined) {
-      return { game, hints: saved.hints, elapsedMs: saved.elapsedMs };
-    }
+  if (saved === undefined || (seed !== undefined && seed !== saved.seed)) {
+    return undefined;
   }
-  return { game: newGame(variant, seed, options, auto), hints: 0, elapsedMs: 0 };
+  const game = restoreGame(variant, saved);
+  return game === undefined ? undefined : { game, hints: saved.hints, elapsedMs: saved.elapsedMs };
 }
 
 export function saveGame(game: Game, extras: SaveExtras): void {

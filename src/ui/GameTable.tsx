@@ -15,7 +15,8 @@ interface Props {
   /** Plays a move; returns false if it was rejected. */
   readonly onPlay: (move: Move) => boolean;
   readonly highlight?: Highlight | undefined;
-  readonly disabled?: boolean;
+  /** A new deal is on its way: input is ignored and a notice appears after a moment. */
+  readonly dealing?: boolean;
 }
 
 /** The play area: measures itself, lays out the table and handles pointer input. */
@@ -26,7 +27,7 @@ export function GameTable({
   smartTap,
   onPlay,
   highlight,
-  disabled = false,
+  dealing = false,
 }: Props) {
   const areaRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,7 @@ export function GameTable({
     smartTap,
     tableRef,
     onPlay,
-    disabled,
+    disabled: dealing,
   });
 
   return (
@@ -57,6 +58,11 @@ export function GameTable({
           handlers={interaction.handlers}
         />
       )}
+      {dealing ? (
+        <output className="dealing">
+          <span>Finding a winnable deal…</span>
+        </output>
+      ) : undefined}
       <output className="table-message" aria-live="polite">
         {interaction.message}
       </output>
