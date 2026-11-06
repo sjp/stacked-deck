@@ -51,6 +51,13 @@ const CardSlot = memo(function CardSlot({
     if (element === null || last === undefined || (last.x === x && last.y === y) || dragging) {
       return undefined;
     }
+    // Start from the old position explicitly: React moves the node when a card changes
+    // places in the list (onto a later pile), and a moved node would otherwise jump.
+    element.style.transition = "none";
+    element.style.transform = `translate(${last.x}px, ${last.y}px)`;
+    element.getBoundingClientRect();
+    element.style.transition = "";
+    element.style.transform = `translate(${x}px, ${y}px)`;
     element.classList.add("moving");
     const done = () => {
       element.classList.remove("moving");
