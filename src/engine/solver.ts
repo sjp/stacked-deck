@@ -44,11 +44,12 @@ export function solve(
   variant: Variant,
   start: GameState,
   limits: SolveLimits,
+  auto: AutoMoveOptions = SOLVER_AUTO,
   now: () => number = () => Date.now(),
 ): SolveResult {
   const deadline = now() + limits.maxMs;
   const key = (state: GameState) => variant.stateKey?.(state) ?? pilesKey(state);
-  const first = settle(variant, start, SOLVER_AUTO).state;
+  const first = settle(variant, start, auto).state;
   const seen = new Set<string>([key(first)]);
   const path: Move[] = [];
   const stack: Frame[] = [{ state: first, moves: orderedMoves(variant, first), next: 0 }];
@@ -73,7 +74,7 @@ export function solve(
     if (nodes > limits.maxNodes || (nodes % 256 === 0 && now() > deadline)) {
       return { status: "gave-up", nodes };
     }
-    const next = settle(variant, variant.applyMove(frame.state, move), SOLVER_AUTO).state;
+    const next = settle(variant, variant.applyMove(frame.state, move), auto).state;
     if (variant.isWon(next)) {
       return { status: "solved", moves: [...path, move], nodes };
     }

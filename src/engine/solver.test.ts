@@ -43,6 +43,25 @@ describe("solve", () => {
     expect(replaysToWin(variant, start, solutionOf(result))).toBe(true);
   });
 
+  it.each([
+    [klondike, { draw: 1 }],
+    [freecell, {}],
+  ])(
+    "finds safe auto-moves never lose a winnable deal (%#)",
+    (variant, options) => {
+      const off = { safeToFoundation: false };
+      const limits = { maxNodes: 100_000, maxMs: 2000 };
+      for (let seed = 1; seed <= 4; seed++) {
+        const start = variant.deal(seed, options);
+        const without = solve(variant, start, limits, off);
+        const withAuto = solve(variant, start, limits);
+        // Whenever a deal is won without auto-moves, it is still won with them.
+        expect([without.status === "solved", withAuto.status]).not.toEqual([true, "unsolvable"]);
+      }
+    },
+    30_000,
+  );
+
   it("proves a dead end unsolvable", () => {
     // Found by searching seeds: classic Golf deal 1 can't be won.
     expect(solve(golf, golf.deal(1, { wrap: false, onKing: false }), LIMITS).status).toBe(
