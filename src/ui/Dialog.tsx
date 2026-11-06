@@ -34,17 +34,22 @@ export function Dialog({
     onClose();
   });
 
+  const pendingBack = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   useEffect(() => {
     const dialog = ref.current;
     if (!open || dialog === null) {
       return undefined;
     }
+    clearTimeout(pendingBack.current);
     dialog.showModal();
-    globalThis.history.pushState({ dialog: id }, "");
+    if (!isOwnEntry(globalThis.history.state, id)) {
+      globalThis.history.pushState({ dialog: id }, "");
+    }
     let closedByHistory = false;
     const onPopState = () => {
       if (isOwnEntry(globalThis.history.state, id)) {
-        // Still on this dialog's entry (a nested dialog closed, or a duplicate entry).
+        // Still on this dialog's entry (a nested dialog closed).
         return;
       }
       closedByHistory = true;
@@ -54,8 +59,13 @@ export function Dialog({
     return () => {
       globalThis.removeEventListener("popstate", onPopState);
       dialog.close();
-      if (!closedByHistory && isOwnEntry(globalThis.history.state, id)) {
-        globalThis.history.back();
+      if (!closedByHistory) {
+        // Deferred, so an immediate reopen (such as a remount) keeps the same entry.
+        pendingBack.current = setTimeout(() => {
+          if (isOwnEntry(globalThis.history.state, id)) {
+            globalThis.history.back();
+          }
+        }, 0);
       }
     };
   }, [open, id]);
