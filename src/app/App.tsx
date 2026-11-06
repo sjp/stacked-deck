@@ -1,8 +1,12 @@
 import { lazy, Suspense } from "react";
-import { getVariant } from "../engine/variants/index.ts";
+import { getVariant, VARIANTS } from "../engine/variants/index.ts";
 import { GameScreen } from "./GameScreen.tsx";
 import { HomeScreen } from "./HomeScreen.tsx";
+import type { Settings } from "./settings.ts";
+import { parseSettings } from "./settings.ts";
 import { SettingsProvider } from "./SettingsProvider.tsx";
+import { readStored, writeStored } from "./storage.ts";
+import { variantsInProgress } from "./useGameSession.ts";
 import { useRoute } from "./useRoute.ts";
 
 const CardGallery = import.meta.env.DEV
@@ -27,12 +31,17 @@ function Screen() {
       return <GameScreen key={variant.id} variant={variant} seed={route.seed} />;
     }
   }
-  return <HomeScreen />;
+  return <HomeScreen inProgress={variantsInProgress(VARIANTS)} />;
 }
+
+const loadSettings = (): Settings => parseSettings(readStored("settings"));
+const saveSettings = (settings: Settings): void => {
+  writeStored("settings", settings);
+};
 
 export function App() {
   return (
-    <SettingsProvider>
+    <SettingsProvider load={loadSettings} save={saveSettings}>
       <Screen />
     </SettingsProvider>
   );

@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Move, VariantOptions } from "../engine/types.ts";
+import { useEffect, useMemo, useState } from "react";
+import type { VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import { GameTable } from "../ui/GameTable.tsx";
 import { optionsFor } from "./settings.ts";
 import { useSettings } from "./settingsContext.ts";
 import { SettingsDialog } from "./SettingsDialog.tsx";
 import { Toolbar } from "./Toolbar.tsx";
-import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
+import { useGameSession } from "./useGameSession.ts";
 import { navigate } from "./useRoute.ts";
 
 interface Props {
@@ -21,18 +21,15 @@ export function GameScreen({ variant, seed }: Props) {
     () => ({ safeToFoundation: settings.autoFoundation }),
     [settings.autoFoundation],
   );
-  const { game, dispatch, replace } = useGame(() =>
-    newGame(variant, seed, optionsFor(settings, variant), auto),
-  );
-  const state = currentState(game);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  const start = useCallback(
-    (options: VariantOptions, dealSeed: number | undefined) => {
-      replace(newGame(variant, dealSeed, options, auto));
-    },
-    [auto, replace, variant],
-  );
+  const session = useGameSession({
+    variant,
+    seed,
+    options: optionsFor(settings, variant),
+    auto,
+    paused: settingsOpen,
+  });
+  const { game, state, start } = session;
 
   const [requestedSeed, setRequestedSeed] = useState(seed);
   if (seed !== requestedSeed) {
@@ -50,17 +47,6 @@ export function GameScreen({ variant, seed }: Props) {
     };
   }, [variant.name]);
 
-  const onPlay = useCallback(
-    (move: Move) => {
-      if (!variant.canMove(state, move)) {
-        return false;
-      }
-      dispatch({ type: "play", move, auto });
-      return true;
-    },
-    [auto, dispatch, state, variant],
-  );
-
   const startNew = (options: VariantOptions = game.options) => {
     start(options, undefined);
     if (seed !== undefined) {
@@ -73,14 +59,14 @@ export function GameScreen({ variant, seed }: Props) {
       <div className="status">
         <span className="status-name">{variant.name}</span>
         {variant.scored ? <span>Score {state.score}</span> : undefined}
-        <span>Moves {moveCount(game)}</span>
+        <span>Moves {session.moves}</span>
       </div>
       <GameTable
         variant={variant}
         state={state}
         leftHanded={settings.leftHanded}
         smartTap={settings.smartTap}
-        onPlay={onPlay}
+        onPlay={session.play}
       />
       <Toolbar
         actions={[
@@ -108,18 +94,14 @@ export function GameScreen({ variant, seed }: Props) {
           {
             icon: "undo",
             label: "Undo",
-            disabled: !undoable(game),
-            onClick: () => {
-              dispatch({ type: "undo" });
-            },
+            disabled: !session.canUndo,
+            onClick: session.undo,
           },
           {
             icon: "redo",
             label: "Redo",
-            disabled: !redoable(game),
-            onClick: () => {
-              dispatch({ type: "redo" });
-            },
+            disabled: !session.canRedo,
+            onClick: session.redo,
           },
           {
             icon: "settings",
