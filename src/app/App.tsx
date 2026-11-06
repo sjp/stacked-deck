@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { getVariant, VARIANTS } from "../engine/variants/index.ts";
+import { DailyScreen } from "./DailyScreen.tsx";
 import { GameScreen } from "./GameScreen.tsx";
 import { HomeScreen } from "./HomeScreen.tsx";
 import { SettingsProvider } from "./SettingsProvider.tsx";
@@ -27,11 +28,21 @@ function Screen() {
   if (route.name === "play") {
     const variant = getVariant(route.variant);
     if (variant !== undefined) {
-      return <GameScreen key={variant.id} variant={variant} seed={route.seed} />;
+      return (
+        <GameScreen
+          key={`${variant.id}:${route.daily ?? ""}`}
+          variant={variant}
+          seed={route.seed}
+          daily={route.daily}
+        />
+      );
     }
   }
   if (route.name === "stats") {
     return <StatsScreen />;
+  }
+  if (route.name === "daily") {
+    return <DailyScreen />;
   }
   return <HomeScreen inProgress={variantsInProgress(VARIANTS)} />;
 }

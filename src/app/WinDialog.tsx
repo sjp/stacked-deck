@@ -14,8 +14,8 @@ export interface WinSummary {
   readonly undos: number;
   /** Personal bests this game beat. */
   readonly newBests?: readonly string[];
-  /** Extra share text, such as the daily deal line. */
-  readonly shareLine?: string;
+  /** The date of a daily deal, which changes the share text. */
+  readonly daily?: string | undefined;
 }
 
 interface Props {
@@ -39,9 +39,11 @@ export function WinDialog({ summary, onNewGame, onClose }: Props) {
     return undefined;
   }
   const share = async () => {
+    const time = formatTime(summary.elapsedMs);
     const line =
-      summary.shareLine ??
-      `Stacked Deck — ${summary.variantName} — won in ${formatTime(summary.elapsedMs)}, ${summary.moves} moves.`;
+      summary.daily === undefined
+        ? `Stacked Deck — ${summary.variantName} — won in ${time}, ${summary.moves} moves.`
+        : `Stacked Deck daily — ${summary.variantName} — ${time}, ${summary.moves} moves`;
     const result = await shareText(line, dealUrl(summary.variantId, summary.seed));
     setShared(result === "copied" ? "Link copied" : result === "shared" ? "Shared" : undefined);
   };
