@@ -1,3 +1,5 @@
+import { klondike } from "../engine/variants/klondike/klondike.ts";
+import { GameScreen } from "./GameScreen.tsx";
 import { lazy, Suspense } from "react";
 
 const CardGallery = import.meta.env.DEV
@@ -15,9 +17,5 @@ export function App() {
       </Suspense>
     );
   }
-  return (
-    <main className="app">
-      <h1>Stacked Deck</h1>
-    </main>
-  );
+  return <GameScreen variant={klondike} />;
 }
