@@ -7,6 +7,7 @@ import { parseSettings } from "./settings.ts";
 import { SettingsProvider } from "./SettingsProvider.tsx";
 import { readStored, writeStored } from "./storage.ts";
 import { variantsInProgress } from "./useGameSession.ts";
+import { UpdateToast } from "./UpdateToast.tsx";
 import { useRoute } from "./useRoute.ts";
 
 const CardGallery = import.meta.env.DEV
@@ -43,6 +44,7 @@ export function App() {
   return (
     <SettingsProvider load={loadSettings} save={saveSettings}>
       <Screen />
+      <UpdateToast />
     </SettingsProvider>
   );
 }

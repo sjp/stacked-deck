@@ -2,6 +2,7 @@ import type { Card, Rank, Suit } from "../engine/cards.ts";
 import type { Variant } from "../engine/variant.ts";
 import { VARIANTS } from "../engine/variants/index.ts";
 import { CardView } from "../ui/CardView.tsx";
+import { showIosInstallHint, usePwa } from "./pwa.ts";
 import { routeHash } from "./route.ts";
 
 /** A few cards that hint at each game, drawn on its tile. */
@@ -56,6 +57,21 @@ function Preview({ variant }: { readonly variant: Variant }) {
   );
 }
 
+function InstallButton() {
+  const { install } = usePwa();
+  if (install !== undefined) {
+    return (
+      <button type="button" className="button" onClick={install}>
+        Install app
+      </button>
+    );
+  }
+  if (showIosInstallHint()) {
+    return <p className="install-hint">Install: Share → Add to Home Screen</p>;
+  }
+  return undefined;
+}
+
 interface Props {
   /** Variants with a game in progress. */
   readonly inProgress?: ReadonlySet<string>;
@@ -68,6 +84,7 @@ export function HomeScreen({ inProgress = NONE }: Props) {
     <main className="home">
       <header className="home-header">
         <h1>Stacked Deck</h1>
+        <InstallButton />
       </header>
       <ul className="variant-list">
         {VARIANTS.map((variant) => (

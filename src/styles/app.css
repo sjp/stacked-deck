@@ -351,3 +351,26 @@ button.primary {
   gap: var(--space-2);
   margin-block-start: var(--space-2);
 }
+
+.install-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Toasts */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  translate: -50% 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.3);
+}

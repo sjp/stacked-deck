@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App.tsx";
+import { startPwa } from "./app/pwa.ts";
 import "./styles/theme.css";
 import "./styles/index.css";
 import "./styles/cards.css";
@@ -16,3 +17,9 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+try {
+  await startPwa();
+} catch (error) {
+  console.warn("Service worker registration failed", error);
+}

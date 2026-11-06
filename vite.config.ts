@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults, defineConfig } from "vitest/config";
 
 /**
@@ -41,7 +42,42 @@ export default defineConfig({
   // Relative base so the build works when served from a GitHub Pages
   // project subpath (https://<user>.github.io/<repo>/).
   base: "./",
-  plugins: [react(), contentSecurityPolicy()],
+  plugins: [
+    react(),
+    contentSecurityPolicy(),
+    VitePWA({
+      // Ask before activating a new version, so an update never interrupts a game.
+      registerType: "prompt",
+      // main.tsx registers the service worker; an inline script would break the CSP.
+      injectRegister: false,
+      includeAssets: ["favicon.svg", "favicon.ico", "apple-touch-icon-180x180.png"],
+      manifest: {
+        name: "Stacked Deck",
+        short_name: "Stacked Deck",
+        description:
+          "Solitaire card games: Klondike, Spider, FreeCell, Pyramid, TriPeaks and Golf.",
+        start_url: "./",
+        scope: "./",
+        display: "standalone",
+        orientation: "any",
+        background_color: "#0c1410",
+        theme_color: "#133a26",
+        categories: ["games"],
+        icons: [
+          { src: "pwa-64x64.png", sizes: "64x64", type: "image/png" },
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest}"] },
+    }),
+  ],
   // Agent worktrees live under .claude/; keep their copies of the tests out of the run.
   test: { exclude: [...configDefaults.exclude, "**/.claude/**"] },
 });
