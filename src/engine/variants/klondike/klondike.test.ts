@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { play, replay, settle } from "../../game.ts";
-import { findPile, getPile } from "../../state.ts";
+import { nextFoundationMove, play, replay, settle } from "../../game.ts";
+import { findPile, getPile, pilesOfKind } from "../../state.ts";
 import { codes, makeState } from "../../testing.ts";
 import type { GameState, Move } from "../../types.ts";
 import { klondike } from "./klondike.ts";
@@ -230,5 +230,28 @@ describe("game", () => {
       state = step.state;
     }
     expect(replay(klondike, start, steps).at(-1)).toEqual(state);
+  });
+});
+
+describe("finishing", () => {
+  it("can finish once everything is face up and the stock is empty", () => {
+    const state = table({ f: ["AS", "AH"], t: ["-KD QS", "2S", "2H", "AD AC"] });
+    expect(klondike.canFinish?.(state)).toBe(false);
+    const ready = table({ f: ["AS", "AH", "AD", "AC"], t: ["2C", "2S", "2H 3S", "2D"] });
+    expect(klondike.canFinish?.(ready)).toBe(true);
+    expect(klondike.canFinish?.(table({ stock: "-KS", t: ["2C"] }))).toBe(false);
+  });
+
+  it("finishes with foundation moves alone", () => {
+    let state = table({
+      f: ["AS", "AH", "AD", "AC"],
+      t: ["3H 2C", "3S 2D", "2H", "3D 2S", "3C"],
+    });
+    for (let i = 0; i < 8; i++) {
+      const move = nextFoundationMove(klondike, state);
+      state = klondike.applyMove(state, move!);
+    }
+    expect(nextFoundationMove(klondike, state)).toBeUndefined();
+    expect(pilesOfKind(state, "tableau").every((column) => column.cards.length === 0)).toBe(true);
   });
 });

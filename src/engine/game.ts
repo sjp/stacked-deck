@@ -63,6 +63,14 @@ export function replay(
   return states;
 }
 
+/** The next move that sends a card to a foundation, for finishing a solved game. */
+export function nextFoundationMove(variant: Variant, state: GameState): Move | undefined {
+  const foundations = new Set(
+    state.piles.filter((pile) => pile.kind === "foundation").map((pile) => pile.id),
+  );
+  return variant.legalMoves(state).find((move) => move.kind === "move" && foundations.has(move.to));
+}
+
 export function sameMove(a: Move, b: Move): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
