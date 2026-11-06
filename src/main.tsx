@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./app/App.tsx";
 import "./styles/theme.css";
 import "./styles/index.css";
+import "./styles/cards.css";
 
 const root = document.querySelector("#root");
 if (root === null) {
