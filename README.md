@@ -1,6 +1,7 @@
 # Stacked Deck
 
-TODO
+Solitaire card games for phones and desktop: Klondike, Spider, FreeCell, Pyramid, TriPeaks
+and Golf. Installable as an app and playable offline.
 
 **Try it: <https://sjp.github.io/stacked-deck/>**
 
