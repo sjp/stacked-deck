@@ -22,8 +22,16 @@ describe("commandFor", () => {
     expect(press("y", { ctrl: true })).toBe("redo");
   });
 
+  it("maps single keys", () => {
+    expect(press("h")).toBe("hint");
+    expect(press("U")).toBe("undo");
+    expect(press("n")).toBe("newGame");
+    expect(press("?", { shift: true })).toBe("help");
+  });
+
   it("ignores other keys", () => {
     expect(press("z")).toBeUndefined();
+    expect(press("h", { ctrl: true })).toBeUndefined();
     expect(press("y", { meta: true })).toBeUndefined();
     expect(press("z", { ctrl: true, alt: true })).toBeUndefined();
   });

@@ -1,4 +1,4 @@
-export type Command = "undo" | "redo";
+export type Command = "undo" | "redo" | "hint" | "newGame" | "help";
 
 export interface KeyInput {
   readonly key: string;
@@ -8,18 +8,42 @@ export interface KeyInput {
   readonly altKey: boolean;
 }
 
-/** Maps a key press to a game command: Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z or Ctrl+Y redoes. */
+/** Single keys that work anywhere in the game (the table handles arrows, Enter, F and D). */
+const PLAIN_KEYS: Readonly<Record<string, Command>> = {
+  h: "hint",
+  u: "undo",
+  n: "newGame",
+  "?": "help",
+};
+
+/**
+ * Maps a key press to a game command. Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z or Ctrl+Y
+ * redoes; H, U, N and ? need no modifier.
+ */
 export function commandFor(input: KeyInput): Command | undefined {
-  const modifier = input.ctrlKey || input.metaKey;
-  if (!modifier || input.altKey) {
+  if (input.altKey) {
     return undefined;
   }
   const key = input.key.toLowerCase();
-  if (key === "z") {
-    return input.shiftKey ? "redo" : "undo";
+  if (input.ctrlKey || input.metaKey) {
+    if (key === "z") {
+      return input.shiftKey ? "redo" : "undo";
+    }
+    return key === "y" && input.ctrlKey && !input.shiftKey ? "redo" : undefined;
   }
-  if (key === "y" && input.ctrlKey && !input.shiftKey) {
-    return "redo";
-  }
-  return undefined;
+  return PLAIN_KEYS[key];
 }
+
+/** The keyboard help shown by "?". */
+export const KEY_HELP: readonly (readonly [string, string])[] = [
+  ["Arrow keys", "Move between cards and piles"],
+  ["Enter or Space", "Pick up the card, or put held cards down"],
+  ["Esc", "Put held cards back"],
+  ["F", "Send the card to a foundation"],
+  ["D", "Draw from the stock"],
+  ["H", "Show a hint"],
+  ["U or Ctrl+Z", "Undo"],
+  ["Ctrl+Shift+Z or Ctrl+Y", "Redo"],
+  ["N", "New game"],
+  ["?", "Show these keys"],
+];

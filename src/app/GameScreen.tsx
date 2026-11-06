@@ -18,11 +18,12 @@ interface Props {
 export function GameScreen({ variant, seed }: Props) {
   const { settings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const session = useGameSession({
     variant,
     seed,
     settings,
-    paused: settingsOpen,
+    paused: settingsOpen || helpOpen,
   });
   const { game, state, start, won } = session;
 
@@ -44,7 +45,26 @@ export function GameScreen({ variant, seed }: Props) {
     };
   }, [variant.name]);
 
-  useCommandKeys({ undo: session.undo, redo: session.redo }, !settingsOpen);
+  const showHint = () => {
+    if (hints.next()) {
+      session.countHint();
+    }
+  };
+
+  useCommandKeys(
+    {
+      undo: session.undo,
+      redo: session.redo,
+      hint: showHint,
+      newGame: () => {
+        startNew();
+      },
+      help: () => {
+        setHelpOpen(true);
+      },
+    },
+    !settingsOpen && !helpOpen,
+  );
 
   const startNew = (options = game.options) => {
     start(options, undefined);
@@ -54,7 +74,7 @@ export function GameScreen({ variant, seed }: Props) {
   };
 
   return (
-    <div className="game">
+    <main className="game">
       <GameStatus
         name={variant.name}
         score={variant.scored ? state.score : undefined}
@@ -97,11 +117,7 @@ export function GameScreen({ variant, seed }: Props) {
             icon: "hint",
             label: "Hint",
             disabled: won,
-            onClick: () => {
-              if (hints.next()) {
-                session.countHint();
-              }
-            },
+            onClick: showHint,
           },
           {
             icon: "undo",
@@ -162,6 +178,12 @@ export function GameScreen({ variant, seed }: Props) {
             startNew();
           },
         }}
+        help={{
+          open: helpOpen,
+          onClose: () => {
+            setHelpOpen(false);
+          },
+        }}
         noMoves={{
           open: hints.noUsefulMoves && !settingsOpen,
           canUndo: session.canUndo,
@@ -172,6 +194,6 @@ export function GameScreen({ variant, seed }: Props) {
           onClose: hints.dismiss,
         }}
       />
-    </div>
+    </main>
   );
 }

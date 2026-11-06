@@ -62,7 +62,7 @@ interface StatusProps {
 export function GameStatus({ name, score, moves, timer }: StatusProps) {
   return (
     <div className="status">
-      <span className="status-name">{name}</span>
+      <h1 className="status-name">{name}</h1>
       {score === undefined ? undefined : <span>Score {score}</span>}
       <span>Moves {moves}</span>
       {timer === undefined ? undefined : <Clock timer={timer} />}

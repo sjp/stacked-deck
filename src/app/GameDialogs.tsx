@@ -4,6 +4,7 @@ import { Dialog } from "../ui/Dialog.tsx";
 import { WinAnimation } from "../ui/WinAnimation.tsx";
 import { cardsForCelebration, useWinCelebration } from "./celebration.ts";
 import { SettingsDialog } from "./SettingsDialog.tsx";
+import { KEY_HELP } from "./shortcuts.ts";
 import type { WinSummary } from "./WinDialog.tsx";
 import { WinDialog } from "./WinDialog.tsx";
 
@@ -16,6 +17,7 @@ interface Props {
     readonly summary: WinSummary;
     readonly onNewGame: () => void;
   };
+  readonly help: { readonly open: boolean; readonly onClose: () => void };
   readonly noMoves: {
     readonly open: boolean;
     readonly canUndo: boolean;
@@ -27,7 +29,7 @@ interface Props {
 }
 
 /** The game screen's overlays: settings, the win celebration and the stuck prompt. */
-export function GameDialogs({ settings, win, noMoves }: Props) {
+export function GameDialogs({ settings, win, help, noMoves }: Props) {
   const celebration = useWinCelebration(win.won, win.state, win.animate);
   return (
     <>
@@ -47,6 +49,16 @@ export function GameDialogs({ settings, win, noMoves }: Props) {
           celebration.setPhase("closed");
         }}
       />
+      <Dialog open={help.open} title="Keyboard" onClose={help.onClose}>
+        <dl className="key-help">
+          {KEY_HELP.map(([keys, action]) => (
+            <div key={keys}>
+              <dt>{keys}</dt>
+              <dd>{action}</dd>
+            </div>
+          ))}
+        </dl>
+      </Dialog>
       <Dialog open={noMoves.open && !win.won} title="No useful moves" onClose={noMoves.onClose}>
         <p>Only going through the stock is left. Start a new game, or undo and try another way.</p>
         <div className="dialog-actions">
