@@ -4,7 +4,7 @@ import { GameTable } from "../ui/GameTable.tsx";
 import { useSettings } from "./settingsContext.ts";
 import { cardsForCelebration, useWinCelebration } from "./celebration.ts";
 import { GameDialogs } from "./GameDialogs.tsx";
-import { Toolbar } from "./Toolbar.tsx";
+import { GameStatus, Toolbar } from "./Toolbar.tsx";
 import { useGameSession } from "./useGameSession.ts";
 import { useCommandKeys } from "./useKeyDown.ts";
 import { navigate } from "./useRoute.ts";
@@ -55,11 +55,12 @@ export function GameScreen({ variant, seed }: Props) {
 
   return (
     <div className="game">
-      <div className="status">
-        <span className="status-name">{variant.name}</span>
-        {variant.scored ? <span>Score {state.score}</span> : undefined}
-        <span>Moves {session.moves}</span>
-      </div>
+      <GameStatus
+        name={variant.name}
+        score={variant.scored ? state.score : undefined}
+        moves={session.moves}
+        timer={settings.showTimer ? session.timer : undefined}
+      />
       <GameTable
         variant={variant}
         state={state}
