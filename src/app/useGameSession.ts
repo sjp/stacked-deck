@@ -1,38 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
-import { parseSaved, restoreGame, toSaved } from "./savedGame.ts";
+import { loadGame } from "./gameStore.ts";
 import type { Settings } from "./settings.ts";
 import { optionsFor } from "./settings.ts";
-import { readStored, removeStored, writeStored } from "./storage.ts";
-import type { Game } from "./useGame.ts";
+import { useAutoSave } from "./useAutoSave.ts";
 import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
-import { usePageVisible } from "./usePageVisible.ts";
-import { useTimer } from "./useTimer.ts";
-
-export const gameKey = (variantId: string): string => `game:${variantId}`;
-
-interface Loaded {
-  readonly game: Game;
-  readonly hints: number;
-  readonly elapsedMs: number;
-}
-
-function load(
-  variant: Variant,
-  seed: number | undefined,
-  options: VariantOptions,
-  auto: AutoMoveOptions,
-): Loaded {
-  const saved = parseSaved(readStored(gameKey(variant.id)));
-  if (saved !== undefined && (seed === undefined || seed === saved.seed)) {
-    const game = restoreGame(variant, saved);
-    if (game !== undefined) {
-      return { game, hints: saved.hints, elapsedMs: saved.elapsedMs };
-    }
-  }
-  return { game: newGame(variant, seed, options, auto), hints: 0, elapsedMs: 0 };
-}
+import { useGameClock } from "./useTimer.ts";
 
 interface Options {
   readonly variant: Variant;
@@ -48,56 +22,16 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
     () => ({ safeToFoundation: settings.autoFoundation }),
     [settings.autoFoundation],
   );
-  const [initial] = useState(() => load(variant, seed, optionsFor(settings, variant), auto));
+  const [initial] = useState(() => loadGame(variant, seed, optionsFor(settings, variant), auto));
   const { game, dispatch, replace } = useGame(() => initial.game);
   const [hints, setHints] = useState(initial.hints);
-  const timer = useTimer(initial.elapsedMs);
-  const visible = usePageVisible();
   const state = currentState(game);
   const won = variant.isWon(state);
   const started = moveCount(game) > 0;
-
   // The timer runs from the first move until the win, while the page is visible.
-  useEffect(() => {
-    if (started && !won && visible && !paused) {
-      timer.start();
-    } else {
-      timer.pause();
-    }
-  }, [started, won, visible, paused, timer]);
+  const timer = useGameClock(initial.elapsedMs, started && !won && !paused);
 
-  const latest = useRef({ game, hints });
-  const save = useCallback(() => {
-    const current = latest.current;
-    if (variant.isWon(currentState(current.game))) {
-      removeStored(gameKey(variant.id));
-      return;
-    }
-    writeStored(
-      gameKey(variant.id),
-      toSaved(current.game, { hints: current.hints, elapsedMs: Math.round(timer.elapsed()) }),
-    );
-  }, [timer, variant]);
-
-  useEffect(() => {
-    latest.current = { game, hints };
-    save();
-  }, [game, hints, save]);
-
-  // iOS doesn't reliably fire beforeunload, so also save when the page is hidden.
-  useEffect(() => {
-    const onHide = () => {
-      if (document.visibilityState === "hidden") {
-        save();
-      }
-    };
-    document.addEventListener("visibilitychange", onHide);
-    globalThis.addEventListener("pagehide", save);
-    return () => {
-      document.removeEventListener("visibilitychange", onHide);
-      globalThis.removeEventListener("pagehide", save);
-    };
-  }, [save]);
+  useAutoSave(game, hints, timer);
 
   const start = useCallback(
     (dealOptions: VariantOptions, dealSeed: number | undefined) => {
@@ -143,16 +77,4 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
     }),
     [dispatch, game, hints, play, start, state, timer, won],
   );
-}
-
-/** Variants with a saved game that has at least one move. */
-export function variantsInProgress(variants: readonly Variant[]): Set<string> {
-  const ids = new Set<string>();
-  for (const variant of variants) {
-    const saved = parseSaved(readStored(gameKey(variant.id)));
-    if (saved !== undefined && saved.steps.length > 1) {
-      ids.add(variant.id);
-    }
-  }
-  return ids;
 }

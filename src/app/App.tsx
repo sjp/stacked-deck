@@ -6,7 +6,7 @@ import type { Settings } from "./settings.ts";
 import { parseSettings } from "./settings.ts";
 import { SettingsProvider } from "./SettingsProvider.tsx";
 import { readStored, writeStored } from "./storage.ts";
-import { variantsInProgress } from "./useGameSession.ts";
+import { variantsInProgress } from "./gameStore.ts";
 import { UpdateToast } from "./UpdateToast.tsx";
 import { useRoute } from "./useRoute.ts";
 

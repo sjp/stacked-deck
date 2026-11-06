@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { usePageVisible } from "./usePageVisible.ts";
 
 export interface Timer {
   /** Milliseconds counted so far. */
@@ -35,4 +36,18 @@ export function useTimer(initialMs = 0): Timer {
     () => ({ elapsed, running, start, pause, reset }),
     [elapsed, running, start, pause, reset],
   );
+}
+
+/** A timer that runs while `running` is true and the page is visible. */
+export function useGameClock(initialMs: number, running: boolean): Timer {
+  const timer = useTimer(initialMs);
+  const visible = usePageVisible();
+  useEffect(() => {
+    if (running && visible) {
+      timer.start();
+    } else {
+      timer.pause();
+    }
+  }, [running, visible, timer]);
+  return timer;
 }
