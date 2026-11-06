@@ -170,7 +170,7 @@
       }
     },
     {
-      "files": ["vite.config.ts"],
+      "files": ["vite.config.ts", "scripts/**"],
       "env": { "browser": false, "node": true }
     }
   ]
