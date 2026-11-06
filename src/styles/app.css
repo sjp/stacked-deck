@@ -374,3 +374,43 @@ button.primary {
   border: 1px solid var(--border);
   box-shadow: 0 8px 30px rgb(0 0 0 / 0.3);
 }
+
+.win-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.win-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+
+.win-stat {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.win-stat dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.win-stat dd {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.win-best {
+  color: var(--accent);
+  font-weight: 700;
+}

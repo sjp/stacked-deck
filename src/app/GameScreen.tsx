@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import type { VariantOptions } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
 import { GameTable } from "../ui/GameTable.tsx";
 import { useSettings } from "./settingsContext.ts";
-import { SettingsDialog } from "./SettingsDialog.tsx";
+import { cardsForCelebration, useWinCelebration } from "./celebration.ts";
+import { GameDialogs } from "./GameDialogs.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { useGameSession } from "./useGameSession.ts";
 import { useCommandKeys } from "./useKeyDown.ts";
@@ -24,7 +24,9 @@ export function GameScreen({ variant, seed }: Props) {
     settings,
     paused: settingsOpen,
   });
-  const { game, state, start } = session;
+  const { game, state, start, won } = session;
+
+  const celebration = useWinCelebration(won, state, settings.animation !== "off");
 
   const [requestedSeed, setRequestedSeed] = useState(seed);
   if (seed !== requestedSeed) {
@@ -44,7 +46,7 @@ export function GameScreen({ variant, seed }: Props) {
 
   useCommandKeys({ undo: session.undo, redo: session.redo }, !settingsOpen);
 
-  const startNew = (options: VariantOptions = game.options) => {
+  const startNew = (options = game.options) => {
     start(options, undefined);
     if (seed !== undefined) {
       navigate({ name: "play", variant: variant.id }, true);
@@ -118,14 +120,34 @@ export function GameScreen({ variant, seed }: Props) {
           },
         ]}
       />
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={() => {
-          setSettingsOpen(false);
+      <GameDialogs
+        settings={{
+          open: settingsOpen,
+          onClose: () => {
+            setSettingsOpen(false);
+          },
+          variant,
+          currentOptions: game.options,
+          onNewGame: startNew,
         }}
-        variant={variant}
-        currentOptions={game.options}
-        onNewGame={startNew}
+        win={{
+          phase: celebration.phase,
+          cards: won ? cardsForCelebration(state) : [],
+          summary: {
+            variantId: variant.id,
+            variantName: variant.name,
+            seed: game.seed,
+            score: variant.scored ? state.score : undefined,
+            elapsedMs: session.timer.elapsed(),
+            moves: session.moves,
+            hints: session.hints,
+            undos: game.undos,
+          },
+          onPhase: celebration.setPhase,
+          onNewGame: () => {
+            startNew();
+          },
+        }}
       />
     </div>
   );

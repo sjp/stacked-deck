@@ -118,6 +118,7 @@ export function Table({
   handlers,
 }: TableProps) {
   const topIndex = new Map(state.piles.map((pile) => [pile.id, pile.cards.length - 1]));
+  const kinds = new Map(state.piles.map((pile) => [pile.id, pile.kind]));
   const style: CSSProperties = {
     "--card-w": `${geometry.cardWidth}px`,
     "--card-h": `${geometry.cardHeight}px`,
@@ -144,6 +145,7 @@ export function Table({
             style={{ transform: `translate(${base.x}px, ${base.y}px)` }}
             data-pile={pileLayout.id}
             data-index={-1}
+            data-kind={kinds.get(pileLayout.id)}
           >
             {pileLayout.emptyLabel === undefined ? undefined : (
               <span className="pile-label">{pileLayout.emptyLabel}</span>
