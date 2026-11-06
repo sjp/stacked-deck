@@ -1,5 +1,4 @@
-import type { VariantOptions } from "../engine/types.ts";
-import type { Variant } from "../engine/variant.ts";
+import { dealKey } from "../engine/dealKey.ts";
 
 /** Results for one variant and option set, such as Klondike Draw 3. */
 export interface StatsRecord {
@@ -29,10 +28,7 @@ export const EMPTY_RECORD: StatsRecord = {
 };
 
 /** Stats are kept separately for each set of options that changes the deal. */
-export function statsKey(variant: Variant, options: VariantOptions): string {
-  const parts = variant.optionSpecs.map((spec) => `${spec.key}=${String(options[spec.key])}`);
-  return [variant.id, ...parts].join(":");
-}
+export const statsKey = dealKey;
 
 export interface Finished {
   readonly elapsedMs: number;
