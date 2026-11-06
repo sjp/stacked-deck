@@ -103,6 +103,10 @@ input:focus-visible {
 }
 
 /* Game */
+.game {
+  overflow: hidden;
+}
+
 .status {
   display: flex;
   gap: var(--space-4);
@@ -170,6 +174,15 @@ input:focus-visible {
   .toolbar {
     order: 1;
     justify-content: space-around;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .tool {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 64px;
+    padding: 0;
   }
 
   .tool-label {
