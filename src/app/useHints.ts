@@ -4,6 +4,10 @@ import { findPile } from "../engine/state.ts";
 import type { GameState, Move } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
 import type { Highlight } from "../ui/Table.tsx";
+import { solverHint } from "./solverClient.ts";
+
+/** How long the solver may look for a winning line before the rule-based hint stands. */
+const SOLVER_HINT_MS = 300;
 
 /** What to light up for a suggested move. */
 export function highlightFor(state: GameState, move: Move): Highlight {
@@ -32,10 +36,14 @@ export function useHints(variant: Variant, state: GameState, active: boolean) {
   const hints = useMemo(() => rankHints(variant, state), [variant, state]);
   const stuck = useMemo(() => active && !hasUsefulMoves(variant, state), [active, variant, state]);
   const [shown, setShown] = useState<{ state: GameState; index: number }>();
+  const [solved, setSolved] = useState<{ state: GameState; move: Move }>();
   const [dismissed, setDismissed] = useState<GameState>();
 
   const index = shown?.state === state ? shown.index : undefined;
-  const move = index === undefined ? undefined : hints[index % Math.max(1, hints.length)];
+  // The first hint for a position comes from the solver when it finds a win in time.
+  const solverMove = index === 0 && solved?.state === state ? solved.move : undefined;
+  const move =
+    solverMove ?? (index === undefined ? undefined : hints[index % Math.max(1, hints.length)]);
 
   return {
     highlight: move === undefined ? undefined : highlightFor(state, move),
@@ -48,6 +56,17 @@ export function useHints(variant: Variant, state: GameState, active: boolean) {
         return false;
       }
       setShown({ state, index: index === undefined ? 0 : index + 1 });
+      if (index === undefined) {
+        const ask = async () => {
+          const found = await solverHint(variant.id, state, SOLVER_HINT_MS);
+          if (found !== undefined) {
+            setSolved({ state, move: found });
+          }
+        };
+        ask().catch((error: unknown) => {
+          console.warn("Solver hint failed", error);
+        });
+      }
       return true;
     },
     dismiss: () => {
