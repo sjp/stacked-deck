@@ -106,6 +106,15 @@ export function useTableInteraction({
   );
   const [drag, setDrag] = useState<DragView>();
   const [shaking, setShaking] = useState<CardRef>();
+  const [message, setMessage] = useState<string>();
+  const messageTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const say = useCallback((text: string) => {
+    clearTimeout(messageTimer.current);
+    setMessage(text);
+    messageTimer.current = setTimeout(() => {
+      setMessage(undefined);
+    }, 2500);
+  }, []);
   const press = useRef<Press | undefined>(undefined);
   const lastTap = useRef<{ ref: CardRef; time: number } | undefined>(undefined);
   /** Smart-tap cycling: repeated taps on a card that just moved try its next destination. */
@@ -330,9 +339,24 @@ export function useTableInteraction({
       setDragOffset(0, 0);
       if (best === undefined || !playMove(best)) {
         shake(current);
+        const pointed = cardRefFromElement(
+          document
+            .elementsFromPoint(clientX, clientY)
+            .find(
+              (element) =>
+                element.closest(".dragging") === null && element.closest("[data-pile]") !== null,
+            ) ?? null,
+        );
+        const reason =
+          pointed === undefined
+            ? undefined
+            : variant.explainMove?.(state, current.pile, current.index, pointed.pile);
+        if (reason !== undefined) {
+          say(reason);
+        }
       }
     },
-    [geometry, playMove, setDragOffset, shake, state, tableRef, variant],
+    [geometry, playMove, say, setDragOffset, shake, state, tableRef, variant],
   );
 
   const onPointerUp = useCallback(
@@ -363,6 +387,7 @@ export function useTableInteraction({
     selection,
     drag,
     shaking,
+    message,
     handlers: {
       onPointerDown,
       onPointerMove,

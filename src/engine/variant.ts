@@ -76,6 +76,8 @@ export interface Variant {
   canPickUp(state: GameState, pile: PileId, index: number): boolean;
   /** The move meant by dropping `from.cards[index..]` on `to`, if it is legal. */
   dropMove(state: GameState, from: PileId, index: number, to: PileId): Move | undefined;
+  /** Why dropping `from.cards[index..]` on `to` isn't allowed, when that isn't obvious. */
+  explainMove?(state: GameState, from: PileId, index: number, to: PileId): string | undefined;
   /** Legal moves for a tap on `pile.cards[index]` (or on an empty pile), best first. */
   tapMoves(state: GameState, pile: PileId, index: number): Move[];
 

@@ -57,6 +57,9 @@ export function GameTable({
           handlers={interaction.handlers}
         />
       )}
+      <output className="table-message" aria-live="polite">
+        {interaction.message}
+      </output>
     </div>
   );
 }
