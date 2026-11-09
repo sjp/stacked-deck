@@ -10,8 +10,10 @@
  *   node scripts/find-winnable.ts --verify [--only key] [--ms 30000]
  *       re-solves every listed deal and fails if any isn't won (after changing the solver)
  */
+import { execFileSync } from "node:child_process";
 import { randomInt } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { allOptionSets, dealKey } from "../src/engine/dealKey.ts";
 import { solve } from "../src/engine/solver.ts";
@@ -23,14 +25,23 @@ const OUTPUT = new URL("../src/engine/winnableSeeds.ts", import.meta.url);
 const { values } = parseArgs({
   options: {
     only: { type: "string" },
-    count: { type: "string", default: "150" },
+    count: { type: "string" },
     // Per seed: 3000 when searching, 30000 when verifying.
     ms: { type: "string" },
-    minutes: { type: "string", default: "10" },
+    minutes: { type: "string" },
     write: { type: "boolean", default: false },
     verify: { type: "boolean", default: false },
   },
 });
+
+/** A positive number from the command line, or the default when it isn't given. */
+function numberArg(name: string, text: string | undefined, fallback: number): number {
+  const value = text === undefined ? fallback : Number(text);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`--${name} must be a positive number, not ${String(text)}`);
+  }
+  return value;
+}
 
 interface Found {
   readonly key: string;
@@ -98,6 +109,8 @@ function write(found: readonly Found[]): void {
       "",
     ].join("\n"),
   );
+  // Format it as the project does, so `npm run check` passes straight away.
+  execFileSync("npx", ["oxfmt", fileURLToPath(OUTPUT)], { stdio: "inherit" });
 }
 
 /** Re-solves every listed deal; returns how many failed. */
@@ -128,7 +141,7 @@ function verify(only: string | undefined, perSeedMs: number): number {
 }
 
 if (values.verify) {
-  const perSeedMs = Number(values.ms ?? "30000");
+  const perSeedMs = numberArg("ms", values.ms, 30_000);
   process.exitCode = verify(values.only, perSeedMs) > 0 ? 1 : 0;
 } else if (values.write) {
   const lines = readFileSync(0, "utf8")
@@ -143,7 +156,12 @@ if (values.verify) {
         )
       : [values.only];
   const found = keys.map((key) =>
-    search(key, Number(values.count), Number(values.ms ?? "3000"), Number(values.minutes)),
+    search(
+      key,
+      numberArg("count", values.count, 150),
+      numberArg("ms", values.ms, 3000),
+      numberArg("minutes", values.minutes, 10),
+    ),
   );
   if (values.only === undefined) {
     write(found);
