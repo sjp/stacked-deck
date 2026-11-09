@@ -180,7 +180,33 @@
 
 .card-slot:focus-visible,
 .pile-base:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: none;
+}
+
+/* Drawn over the cursor's card rather than raising it (see FocusRing in Table.tsx). */
+.focus-ring {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: calc(var(--card-w) * 0.07);
+  pointer-events: none;
+  z-index: 8000;
+  outline: 3px solid var(--table-focus);
   outline-offset: 2px;
-  z-index: 8000 !important;
+  box-shadow: 0 0 0 7px var(--table-focus-edge);
+}
+
+.table:has(.card-slot:focus-visible, .pile-base:focus-visible) .focus-ring {
+  display: block;
+}
+
+@supports not selector(:has(*)) {
+  .card-slot:focus-visible,
+  .pile-base:focus-visible {
+    outline: 3px solid var(--table-focus);
+    outline-offset: 2px;
+  }
 }

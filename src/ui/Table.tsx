@@ -194,6 +194,40 @@ function inRun(ref: CardRef | undefined, pile: PileId, index: number): boolean {
   return ref?.pile === pile && index >= ref.index && ref.index >= 0;
 }
 
+/**
+ * The keyboard focus ring, drawn as its own layer over the cursor's card. Raising the
+ * focused card instead would hide the corners of the cards fanned over it, just when the
+ * player is choosing where a run starts. CSS shows it only while a table button has
+ * keyboard focus.
+ */
+function FocusRing({
+  cursor,
+  geometry,
+}: {
+  readonly cursor: CardRef | undefined;
+  readonly geometry: TableGeometry;
+}) {
+  if (cursor === undefined) {
+    return undefined;
+  }
+  const at =
+    cursor.index < 0
+      ? geometry.bases.get(cursor.pile)
+      : geometry.cards.find(
+          (placement) => placement.pile === cursor.pile && placement.index === cursor.index,
+        );
+  if (at === undefined) {
+    return undefined;
+  }
+  return (
+    <div
+      className="focus-ring"
+      aria-hidden="true"
+      style={{ transform: `translate(${at.x}px, ${at.y}px)` }}
+    />
+  );
+}
+
 /** A translucent copy of the hinted card that glides to its destination. */
 function HintGhost({
   highlight,
@@ -317,6 +351,7 @@ export function Table({
         );
       })}
       <HintGhost highlight={highlight} layout={layout} geometry={geometry} />
+      <FocusRing cursor={cursor} geometry={geometry} />
     </section>
   );
 }
