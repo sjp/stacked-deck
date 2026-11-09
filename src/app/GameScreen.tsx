@@ -20,13 +20,14 @@ export function GameScreen({ variant, link }: Props) {
   const { settings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [confirmNewOpen, setConfirmNewOpen] = useState(false);
   // Mirrors whether the no-moves prompt is open; it depends on the session, which needs it.
   const [noMovesShown, setNoMovesShown] = useState(false);
   const session = useGameSession({
     variant,
     link,
     settings,
-    paused: settingsOpen || helpOpen || noMovesShown,
+    paused: settingsOpen || helpOpen || confirmNewOpen || noMovesShown,
   });
   const { game, state, start, won } = session;
 
@@ -54,14 +55,20 @@ export function GameScreen({ variant, link }: Props) {
       undo: session.undo,
       redo: session.redo,
       hint: showHint,
+      // A stray key press shouldn't end a game in progress (and its streak) unasked.
       newGame: () => {
-        startNew();
+        if (session.started && !won) {
+          setConfirmNewOpen(true);
+        } else {
+          startNew();
+        }
       },
       help: () => {
         setHelpOpen(true);
       },
     },
-    !settingsOpen && !helpOpen,
+    // Off while any dialog is open, so keys never act on the game behind it.
+    !settingsOpen && !helpOpen && !confirmNewOpen && !noMovesOpen && !won && !session.linkPending,
   );
 
   const startNew = (options = game.options, ending?: Ending) => {
@@ -189,6 +196,16 @@ export function GameScreen({ variant, link }: Props) {
           },
           onUndo: session.undo,
           onClose: hints.dismiss,
+        }}
+        confirmNew={{
+          open: confirmNewOpen,
+          onConfirm: () => {
+            setConfirmNewOpen(false);
+            startNew();
+          },
+          onCancel: () => {
+            setConfirmNewOpen(false);
+          },
         }}
         link={{
           open: session.linkPending,

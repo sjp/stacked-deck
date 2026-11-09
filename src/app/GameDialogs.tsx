@@ -27,6 +27,12 @@ interface Props {
     readonly onUndo: () => void;
     readonly onClose: () => void;
   };
+  /** Asks before the N key ends a game in progress. */
+  readonly confirmNew: {
+    readonly open: boolean;
+    readonly onConfirm: () => void;
+    readonly onCancel: () => void;
+  };
   /** Asks before a deal link replaces the game in progress. */
   readonly link: {
     readonly open: boolean;
@@ -37,7 +43,7 @@ interface Props {
 }
 
 /** The game screen's overlays: settings, the win celebration and the stuck prompt. */
-export function GameDialogs({ settings, win, help, noMoves, link }: Props) {
+export function GameDialogs({ settings, win, help, noMoves, confirmNew, link }: Props) {
   const celebration = useWinCelebration(win.won, win.state, win.animate);
   // A new list on every render would restart the animation.
   const celebrated = useMemo(() => cardsForCelebration(win.state), [win.state]);
@@ -84,6 +90,17 @@ export function GameDialogs({ settings, win, help, noMoves, link }: Props) {
             Undo
           </button>
           <button type="button" className="button" onClick={noMoves.onClose}>
+            Keep playing
+          </button>
+        </div>
+      </Dialog>
+      <Dialog open={confirmNew.open} title="Start a new game?" onClose={confirmNew.onCancel}>
+        <p>This ends your game in progress, which breaks your win streak.</p>
+        <div className="dialog-actions">
+          <button type="button" className="primary" onClick={confirmNew.onConfirm}>
+            New game
+          </button>
+          <button type="button" className="button" onClick={confirmNew.onCancel}>
             Keep playing
           </button>
         </div>

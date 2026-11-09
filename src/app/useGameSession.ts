@@ -136,6 +136,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       won,
       dealing,
       moves: moveCount(game),
+      started,
       canFinish,
       finishing,
       finish: () => {
@@ -183,6 +184,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       pendingLink,
       play,
       start,
+      started,
       state,
       timer,
       won,
