@@ -92,6 +92,8 @@ body {
   flex: 1;
   min-height: 0;
   position: relative;
+  /* Card layers (z-index up to the thousands) stay inside the table, under app overlays. */
+  isolation: isolate;
 }
 
 html,
