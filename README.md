@@ -13,7 +13,6 @@ and Golf. Installable as an app and playable offline.
 - Six games: Klondike (Draw 1 or 3), Spider (1, 2 or 4 suits), FreeCell, Pyramid, TriPeaks
   and Golf.
 - Winnable deals by default, checked by a solver, with a setting for fully random deals.
-- A daily deal for each game, the same for everyone, with a streak and calendar.
 - Undo and redo, hints, auto-complete, score, timer and per-game statistics.
 - Drag, tap-to-move (with smart tap) or keyboard play; screen-reader labels and
   announcements.
