@@ -57,3 +57,16 @@ export function pilesKey(state: GameState): string {
     .map((pile) => pile.cards.map((card) => (card.faceUp ? card.id : ~card.id)).join(","))
     .join("|");
 }
+
+/**
+ * Like `pilesKey`, but leaving out the foundations. Every card is somewhere, so what the
+ * foundations hold follows from the other piles; leaving them out makes positions that
+ * differ only in which foundation slot a suit went to (or the order cards were played
+ * there) share a key.
+ */
+export function playKey(state: GameState): string {
+  return state.piles
+    .filter((pile) => pile.kind !== "foundation")
+    .map((pile) => pile.cards.map((card) => (card.faceUp ? card.id : ~card.id)).join(","))
+    .join("|");
+}

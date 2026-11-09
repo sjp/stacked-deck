@@ -7,7 +7,7 @@ import {
   findPile,
   getPile,
   makePile,
-  pilesKey,
+  playKey,
   pilesOfKind,
   topCard,
   withPiles,
@@ -334,5 +334,5 @@ export const spider: Variant = {
   canPickUp,
   dropMove,
   tapMoves,
-  stateKey: pilesKey,
+  stateKey: playKey,
 };

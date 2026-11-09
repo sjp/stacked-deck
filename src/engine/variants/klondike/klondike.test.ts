@@ -255,3 +255,21 @@ describe("finishing", () => {
     expect(pilesOfKind(state, "tableau").every((column) => column.cards.length === 0)).toBe(true);
   });
 });
+
+/** The same position with two piles' cards swapped. */
+function swapCards(state: GameState, first: string, second: string): GameState {
+  const cardsOf = (id: string) => getPile(state, id).cards;
+  const piles = state.piles.map((item) => {
+    const from = item.id === first ? second : item.id === second ? first : undefined;
+    return from === undefined ? item : { id: item.id, kind: item.kind, cards: cardsOf(from) };
+  });
+  return { ...state, piles };
+}
+
+describe("state keys", () => {
+  it("ignore which foundation slot each suit went to", () => {
+    const state = table({ f: ["AS 2S", "AH"], t: ["KD"] });
+    expect(klondike.stateKey?.(swapCards(state, "f0", "f1"))).toBe(klondike.stateKey?.(state));
+    expect(klondike.stateKey?.(swapCards(state, "f0", "t0"))).not.toBe(klondike.stateKey?.(state));
+  });
+});

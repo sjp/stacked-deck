@@ -7,7 +7,7 @@ import {
   findPile,
   getPile,
   makePile,
-  pilesKey,
+  playKey,
   topCard,
   withCounter,
   withPiles,
@@ -260,9 +260,16 @@ function layout(_state: GameState, context: LayoutContext): TableLayout {
   };
 }
 
-/** Stock passes matter to what's still possible, so the solver keys on them too. */
+/**
+ * The pyramid, stock and waste decide what is still possible (the discard pile follows
+ * from them). With limited passes, the passes used matter too; with unlimited ones they
+ * don't, and keying on them would make cycling the stock look like progress for ever.
+ */
 function stateKey(state: GameState): string {
-  return `${pilesKey(state)}#${counter(state, "recycles")}`;
+  const table = playKey(state);
+  return passes(state) === Number.POSITIVE_INFINITY
+    ? table
+    : `${table}#${counter(state, "recycles")}`;
 }
 
 export const pyramid: Variant = {

@@ -15,7 +15,7 @@ import {
   findPile,
   getPile,
   makePile,
-  pilesKey,
+  playKey,
   pilesOfKind,
   topCard,
   withCounter,
@@ -458,5 +458,5 @@ export const klondike: Variant = {
   canPickUp,
   dropMove,
   tapMoves,
-  stateKey: pilesKey,
+  stateKey: playKey,
 };

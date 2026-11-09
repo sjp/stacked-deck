@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { hasUsefulMoves } from "../../hints.ts";
+import { solve } from "../../solver.ts";
 import { findPile, getPile } from "../../state.ts";
-import { allOfferedMovesLegal, codes, makeState, walk } from "../../testing.ts";
+import { allOfferedMovesLegal, cards, codes, makeState, walk } from "../../testing.ts";
 import type { GameState } from "../../types.ts";
 import { isExposed, pyramid, pyramidId } from "./pyramid.ts";
 
@@ -156,5 +158,32 @@ describe("legal moves", () => {
     const states: GameState[] = walk(pyramid, pyramid.deal(seed, { passes: 0 }), 150);
     expect(states.length).toBeGreaterThan(10);
     expect(allOfferedMovesLegal(pyramid, states)).toBe(true);
+  });
+});
+
+describe("state keys", () => {
+  const UNLIMITED = { passes: 0 };
+
+  it("ignore the order cards were discarded in", () => {
+    const state = table([["6S"]], "2C", "3D");
+    const discards = cards("KH QD AC");
+    const withDiscards = (order: readonly number[]): GameState => ({
+      ...state,
+      piles: [
+        ...state.piles.filter((pile) => pile.id !== "f0"),
+        { id: "f0", kind: "foundation", cards: order.map((index) => discards[index]!) },
+      ],
+    });
+    expect(pyramid.stateKey?.(withDiscards([0, 1, 2]))).toBe(
+      pyramid.stateKey?.(withDiscards([1, 2, 0])),
+    );
+  });
+
+  it("let a dead end with unlimited passes be found quickly", () => {
+    const state = table([["6S"]], "2C 3D", "", UNLIMITED);
+    expect(solve(pyramid, state, { maxNodes: 1000, maxMs: 1000 })).toMatchObject({
+      status: "exhausted",
+    });
+    expect(hasUsefulMoves(pyramid, state)).toBe(false);
   });
 });
