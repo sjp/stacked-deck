@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+  RefObject,
+} from "react";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move, PileId } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
@@ -8,7 +12,8 @@ import type { Rect, TableGeometry } from "./geometry.ts";
 import { containsPoint, overlapArea } from "./geometry.ts";
 
 /** Pointer travel, in pixels, before a press becomes a drag. */
-const DRAG_THRESHOLD = 6;
+/** How far a press moves before it's a drag (or, on a card that can't move, not a tap). */
+const DRAG_THRESHOLD = { mouse: 6, touch: 10 } as const;
 const DOUBLE_TAP_MS = 320;
 const SHAKE_MS = 400;
 
@@ -23,7 +28,10 @@ interface Press extends CardRef {
   readonly startX: number;
   readonly startY: number;
   readonly canDrag: boolean;
+  readonly threshold: number;
   dragging: boolean;
+  /** Moved too far to count as a tap (on a card that can't be dragged). */
+  wandered: boolean;
 }
 
 export interface DragView extends CardRef {
@@ -115,6 +123,14 @@ export function useTableInteraction({
   const [shaking, setShaking] = useState<CardRef>();
   const [message, setMessage] = useState<string>();
   const messageTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const shakeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(messageTimer.current);
+      clearTimeout(shakeTimer.current);
+    },
+    [],
+  );
   const say = useCallback((text: string) => {
     clearTimeout(messageTimer.current);
     setMessage(text);
@@ -131,7 +147,9 @@ export function useTableInteraction({
     emitFeedback("invalid");
     onInvalidRef.current?.();
     setShaking(ref);
-    setTimeout(() => {
+    // One timer, so an earlier shake can't end a later one early.
+    clearTimeout(shakeTimer.current);
+    shakeTimer.current = setTimeout(() => {
       setShaking(undefined);
     }, SHAKE_MS);
   }, []);
@@ -289,7 +307,9 @@ export function useTableInteraction({
         startX: event.clientX,
         startY: event.clientY,
         canDrag: ref.index >= 0 && variant.canPickUp(state, ref.pile, ref.index),
+        threshold: event.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch,
         dragging: false,
+        wandered: false,
       };
     },
     [disabled, setSelection, state, variant],
@@ -298,13 +318,18 @@ export function useTableInteraction({
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
       const current = press.current;
-      if (current?.pointerId !== event.pointerId || !current.canDrag) {
+      if (current?.pointerId !== event.pointerId) {
         return;
       }
       const dx = event.clientX - current.startX;
       const dy = event.clientY - current.startY;
+      if (!current.canDrag) {
+        // A swipe across the stock shouldn't draw.
+        current.wandered ||= Math.hypot(dx, dy) >= current.threshold;
+        return;
+      }
       if (!current.dragging) {
-        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) {
+        if (Math.hypot(dx, dy) < current.threshold) {
           return;
         }
         current.dragging = true;
@@ -360,23 +385,25 @@ export function useTableInteraction({
         }
       }
       setDrag(undefined);
-      if (best === undefined || !playMove(best)) {
-        shake(current);
-        const pointed = cardRefFromElement(
-          document
-            .elementsFromPoint(clientX, clientY)
-            .find(
-              (element) =>
-                element.closest(".dragging") === null && element.closest("[data-pile]") !== null,
-            ) ?? null,
-        );
-        const reason =
-          pointed === undefined
-            ? undefined
-            : variant.explainMove?.(state, current.pile, current.index, pointed.pile);
-        if (reason !== undefined) {
-          say(reason);
-        }
+      if (best !== undefined && playMove(best)) {
+        return;
+      }
+      const pointed = cardRefFromElement(
+        document
+          .elementsFromPoint(clientX, clientY)
+          .find(
+            (element) =>
+              element.closest(".dragging") === null && element.closest("[data-pile]") !== null,
+          ) ?? null,
+      );
+      // Let go over bare felt or its own pile: the cards just slide back, without a fuss.
+      if (pointed === undefined || pointed.pile === current.pile) {
+        return;
+      }
+      shake(current);
+      const reason = variant.explainMove?.(state, current.pile, current.index, pointed.pile);
+      if (reason !== undefined) {
+        say(reason);
       }
     },
     [geometry, playMove, say, shake, state, tableRef, variant],
@@ -391,15 +418,19 @@ export function useTableInteraction({
       press.current = undefined;
       if (current.dragging) {
         finishDrag(current, event.clientX, event.clientY);
-      } else {
+      } else if (!current.wandered) {
         tap(current);
       }
     },
     [finishDrag, tap],
   );
 
-  const onPointerCancel = useCallback(() => {
-    if (press.current?.dragging === true) {
+  const onPointerCancel = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    // Another finger's cancel leaves this drag alone.
+    if (press.current?.pointerId !== event.pointerId) {
+      return;
+    }
+    if (press.current.dragging) {
       setDrag(undefined);
     }
     press.current = undefined;
@@ -438,6 +469,10 @@ export function useTableInteraction({
       onPointerUp,
       onPointerCancel,
       onLostPointerCapture: onPointerCancel,
+      // No long-press menu on Android while holding a card.
+      onContextMenu: (event: ReactMouseEvent<HTMLElement>) => {
+        event.preventDefault();
+      },
     },
   };
 }

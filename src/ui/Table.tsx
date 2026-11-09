@@ -230,6 +230,7 @@ interface TableProps {
     readonly onPointerUp: PointerEventHandler<HTMLElement>;
     readonly onPointerCancel: PointerEventHandler<HTMLElement>;
     readonly onLostPointerCapture: PointerEventHandler<HTMLElement>;
+    readonly onContextMenu: MouseEventHandler<HTMLElement>;
     readonly onKeyDown?: KeyboardEventHandler<HTMLElement>;
     readonly onClick?: MouseEventHandler<HTMLElement>;
     readonly onFocus?: FocusEventHandler<HTMLElement>;
