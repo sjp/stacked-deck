@@ -39,7 +39,6 @@ export function useGameOutcome(
       return;
     }
     recorded.current = gameNumber;
-    emitFeedback("win");
     const elapsedMs = Math.round(timer.elapsed());
     let bests: string[] = [];
     updateRecord(key, (record) => {
@@ -55,6 +54,8 @@ export function useGameOutcome(
       return result.record;
     });
     setNewBests({ game: gameNumber, bests });
+    // After recording, so nothing a sound or vibration does can lose the win.
+    emitFeedback("win");
   }, [game, gameNumber, hints, key, timer, won]);
 
   /** Call before dealing again: counts the current game as lost or abandoned. */

@@ -20,8 +20,13 @@ export function onFeedback(listener: Listener): () => void {
   };
 }
 
+/** Tells every listener; one that fails (say, audio that can't start) can't stop the rest. */
 export function emitFeedback(event: FeedbackEvent): void {
   for (const listener of listeners) {
-    listener(event);
+    try {
+      listener(event);
+    } catch (error) {
+      console.warn("Feedback failed", event, error);
+    }
   }
 }
