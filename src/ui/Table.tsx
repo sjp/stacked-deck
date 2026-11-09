@@ -1,5 +1,12 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import type { CSSProperties, KeyboardEventHandler, PointerEventHandler, RefObject } from "react";
+import type {
+  CSSProperties,
+  FocusEventHandler,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  PointerEventHandler,
+  RefObject,
+} from "react";
 import type { Card } from "../engine/cards.ts";
 import { cardLabel, pileLabel, pileName } from "../engine/describe.ts";
 import type { GameState, PileId } from "../engine/types.ts";
@@ -187,6 +194,8 @@ interface TableProps {
     readonly onPointerCancel: PointerEventHandler<HTMLElement>;
     readonly onLostPointerCapture: PointerEventHandler<HTMLElement>;
     readonly onKeyDown?: KeyboardEventHandler<HTMLElement>;
+    readonly onClick?: MouseEventHandler<HTMLElement>;
+    readonly onFocus?: FocusEventHandler<HTMLElement>;
   };
 }
 

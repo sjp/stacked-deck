@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { FocusEvent, KeyboardEvent, MouseEvent } from "react";
 import { emitFeedback } from "../app/feedback.ts";
 import { describeMove } from "../engine/describe.ts";
 import type { GameState, Move } from "../engine/types.ts";
@@ -11,7 +11,7 @@ import { Table } from "./Table.tsx";
 import { useElementSize } from "./useElementSize.ts";
 import { useGeometry } from "./useGeometry.ts";
 import type { CardRef } from "./useTableInteraction.ts";
-import { useTableInteraction } from "./useTableInteraction.ts";
+import { cardRefFromElement, useTableInteraction } from "./useTableInteraction.ts";
 
 const ARROWS: Readonly<Record<string, Direction>> = {
   ArrowLeft: "left",
@@ -97,16 +97,42 @@ export function GameTable({
       ? undefined
       : settleCursor(state, table.layout, rawCursor ?? firstCursor(state, table.layout));
 
-  // Keep keyboard focus on the cursor while the table has focus.
+  // Keep keyboard focus on the cursor while the table has focus. Compared by value: the
+  // default cursor is a new object on every render.
+  const cursorPile = cursor?.pile;
+  const cursorIndex = cursor?.index;
   useEffect(() => {
     const element = tableRef.current;
-    if (element === null || cursor === undefined || !element.contains(document.activeElement)) {
+    if (element === null || cursorPile === undefined) {
       return;
     }
-    element
-      .querySelector<HTMLElement>(`[data-pile="${cursor.pile}"][data-index="${cursor.index}"]`)
-      ?.focus();
-  }, [cursor]);
+    const target = element.querySelector<HTMLElement>(
+      `[data-pile="${cursorPile}"][data-index="${cursorIndex}"]`,
+    );
+    if (element.contains(document.activeElement) && document.activeElement !== target) {
+      // Scrolling the table would throw off drag hit-testing.
+      target?.focus({ preventScroll: true });
+    }
+  }, [cursorPile, cursorIndex]);
+
+  // Focus that lands on a card another way (a click, a screen reader) moves the cursor.
+  const onFocus = (event: FocusEvent<HTMLElement>) => {
+    const ref = cardRefFromElement(event.target);
+    if (ref !== undefined && (ref.pile !== cursorPile || ref.index !== cursorIndex)) {
+      setCursor(ref);
+    }
+  };
+
+  // Enter and Space reach here as native button clicks, as do screen readers' activations;
+  // neither has a pointer press before it (detail 0). Pointer taps are handled on pointerup.
+  const onClick = (event: MouseEvent<HTMLElement>) => {
+    const ref = cardRefFromElement(event.target);
+    if (event.detail !== 0 || ref === undefined || dealing) {
+      return;
+    }
+    setCursor(ref);
+    interaction.activate(ref, false);
+  };
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (table === undefined || cursor === undefined || dealing) {
@@ -116,8 +142,6 @@ export function GameTable({
     const key = event.key.toLowerCase();
     if (direction !== undefined) {
       setCursor(moveCursor(state, table.layout, cursor, direction));
-    } else if (key === "enter" || key === " ") {
-      interaction.activate(cursor, false);
     } else if (key === "escape") {
       interaction.clearSelection();
     } else if (key === "f") {
@@ -147,7 +171,7 @@ export function GameTable({
           {...(highlight === undefined ? {} : { highlight })}
           cursor={cursor}
           tableRef={tableRef}
-          handlers={{ ...interaction.handlers, onKeyDown }}
+          handlers={{ ...interaction.handlers, onKeyDown, onClick, onFocus }}
         />
       )}
       {dealing ? (
