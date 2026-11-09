@@ -1,7 +1,6 @@
 # Stacked Deck
 
 [![CI](https://github.com/sjp/stacked-deck/actions/workflows/ci.yml/badge.svg)](https://github.com/sjp/stacked-deck/actions/workflows/ci.yml)
-[![Deploy](https://github.com/sjp/stacked-deck/actions/workflows/deploy.yml/badge.svg)](https://github.com/sjp/stacked-deck/actions/workflows/deploy.yml)
 
 Solitaire card games for phones and desktop: Klondike, Spider, FreeCell, Pyramid, TriPeaks
 and Golf. Installable as an app and playable offline.
