@@ -7,6 +7,8 @@
  *       prints one JSON line for that set instead of writing
  *   node scripts/find-winnable.ts --write < lines.jsonl
  *       merges printed lines into the file
+ *   node scripts/find-winnable.ts --verify [--only key] [--ms 30000]
+ *       re-solves every listed deal and fails if any isn't won (after changing the solver)
  */
 import { randomInt } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -22,9 +24,11 @@ const { values } = parseArgs({
   options: {
     only: { type: "string" },
     count: { type: "string", default: "150" },
-    ms: { type: "string", default: "3000" },
+    // Per seed: 3000 when searching, 30000 when verifying.
+    ms: { type: "string" },
     minutes: { type: "string", default: "10" },
     write: { type: "boolean", default: false },
+    verify: { type: "boolean", default: false },
   },
 });
 
@@ -96,7 +100,37 @@ function write(found: readonly Found[]): void {
   );
 }
 
-if (values.write) {
+/** Re-solves every listed deal; returns how many failed. */
+function verify(only: string | undefined, perSeedMs: number): number {
+  let failed = 0;
+  for (const variant of VARIANTS) {
+    for (const options of allOptionSets(variant)) {
+      const key = dealKey(variant, options);
+      if (only !== undefined && key !== only) {
+        continue;
+      }
+      const seeds = WINNABLE_SEEDS[key] ?? [];
+      const lost = seeds.filter(
+        (seed) =>
+          solve(variant, variant.deal(seed, options), {
+            maxNodes: Number.POSITIVE_INFINITY,
+            maxMs: perSeedMs,
+          }).status !== "solved",
+      );
+      failed += lost.length;
+      process.stderr.write(`${key}: ${seeds.length - lost.length} of ${seeds.length} won\n`);
+      if (lost.length > 0) {
+        process.stderr.write(`  not won: ${lost.join(", ")}\n`);
+      }
+    }
+  }
+  return failed;
+}
+
+if (values.verify) {
+  const perSeedMs = Number(values.ms ?? "30000");
+  process.exitCode = verify(values.only, perSeedMs) > 0 ? 1 : 0;
+} else if (values.write) {
   const lines = readFileSync(0, "utf8")
     .split("\n")
     .filter((line) => line.trim().length > 0);
@@ -109,7 +143,7 @@ if (values.write) {
         )
       : [values.only];
   const found = keys.map((key) =>
-    search(key, Number(values.count), Number(values.ms), Number(values.minutes)),
+    search(key, Number(values.count), Number(values.ms ?? "3000"), Number(values.minutes)),
   );
   if (values.only === undefined) {
     write(found);
