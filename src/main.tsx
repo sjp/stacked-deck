@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App.tsx";
 import { startPwa } from "./app/pwa.ts";
+import { removeRetiredData } from "./app/retiredData.ts";
 import "./styles/theme.css";
 import "./styles/index.css";
 import "./styles/cards.css";
@@ -12,6 +13,7 @@ const root = document.querySelector("#root");
 if (root === null) {
   throw new Error("Missing #root element");
 }
+removeRetiredData();
 createRoot(root).render(
   <StrictMode>
     <App />
