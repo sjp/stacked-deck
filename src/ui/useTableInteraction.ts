@@ -136,23 +136,26 @@ export function useTableInteraction({
     }, SHAKE_MS);
   }, []);
 
-  const setDragOffset = useCallback(
-    (dx: number, dy: number) => {
-      const element = tableRef.current;
-      if (element !== null) {
-        element.style.setProperty("--drag-x", `${dx}px`);
-        element.style.setProperty("--drag-y", `${dy}px`);
-      }
-    },
-    [tableRef],
-  );
-  // The offset is cleared only after a drop commits, so each card's own layout effect
-  // (which runs first) can still read where it was let go and slide on from there.
+  // The dragged cards' elements, found once when a drag starts. The offset goes on them
+  // alone: set on the table, it would restyle every card on every pointer move.
+  const draggedElements = useRef<HTMLElement[]>([]);
+  const setDragOffset = useCallback((dx: number, dy: number) => {
+    for (const element of draggedElements.current) {
+      element.style.setProperty("--drag-x", `${dx}px`);
+      element.style.setProperty("--drag-y", `${dy}px`);
+    }
+  }, []);
+  // The offset is cleared only after a drop commits, so the table's card animation (whose
+  // layout effect runs first) can still read where the cards were let go.
   useLayoutEffect(() => {
     if (drag === undefined) {
-      setDragOffset(0, 0);
+      for (const element of draggedElements.current) {
+        element.style.removeProperty("--drag-x");
+        element.style.removeProperty("--drag-y");
+      }
+      draggedElements.current = [];
     }
-  }, [drag, setDragOffset]);
+  }, [drag]);
 
   const playMove = useCallback(
     (move: Move): boolean => {
@@ -305,6 +308,12 @@ export function useTableInteraction({
           return;
         }
         current.dragging = true;
+        const pile = tableRef.current?.querySelectorAll<HTMLElement>(
+          `.card-slot[data-pile="${CSS.escape(current.pile)}"]`,
+        );
+        draggedElements.current = [...(pile ?? [])].filter(
+          (element) => Number(element.dataset["index"]) >= current.index,
+        );
         setSelection(undefined);
         emitFeedback("pickup");
         setDrag({
@@ -315,7 +324,7 @@ export function useTableInteraction({
       }
       setDragOffset(dx, dy);
     },
-    [setDragOffset, setSelection, state, variant],
+    [setDragOffset, setSelection, state, tableRef, variant],
   );
 
   const finishDrag = useCallback(

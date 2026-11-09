@@ -8,8 +8,6 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  --drag-x: 0px;
-  --drag-y: 0px;
 }
 
 .pile-base,
@@ -42,19 +40,16 @@
   box-shadow: inset 0 0 0 3px var(--target);
 }
 
-.card-slot {
-  transition: transform var(--move-ms, 180ms) ease-out;
+/* Sliding (animated from Table.tsx), so lifted above every resting card: LIFT_Z in geometry.ts. */
+.card-slot[data-moving] {
+  z-index: 5000 !important;
   will-change: transform;
 }
 
-/* LIFT_Z in geometry.ts: above every resting card. */
-.card-slot.moving {
-  z-index: 5000 !important;
-}
-
+/* --drag-x/y are set on the dragged cards themselves, so a drag restyles only them. */
 .card-slot.dragging {
-  transition: none;
-  translate: var(--drag-x) var(--drag-y);
+  will-change: translate;
+  translate: var(--drag-x, 0px) var(--drag-y, 0px);
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.35));
 }
 

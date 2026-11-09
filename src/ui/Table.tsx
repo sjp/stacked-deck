@@ -12,7 +12,7 @@ import { cardLabel, pileLabel, pileName } from "../engine/describe.ts";
 import type { GameState, PileId } from "../engine/types.ts";
 import type { TableLayout } from "../engine/variant.ts";
 import { CardView } from "./CardView.tsx";
-import type { CardPlacement, TableGeometry } from "./geometry.ts";
+import type { TableGeometry } from "./geometry.ts";
 import { LIFT_Z } from "./geometry.ts";
 import type { CardRef, DragView } from "./useTableInteraction.ts";
 
@@ -26,49 +26,135 @@ interface Point {
   readonly y: number;
 }
 
-/** A slide in progress, so a move that interrupts it can start from where the card is. */
-interface Motion {
-  readonly from: Point;
-  readonly to: Point;
-  readonly start: number;
-  readonly ms: number;
+/** What the table remembers about each card between renders, to animate its moves. */
+interface Track {
+  /** Where the card was placed last render. */
+  readonly at: Point;
+  readonly dragging: boolean;
+  /** The slide in progress, if any. */
+  readonly motion?: {
+    readonly from: Point;
+    readonly start: number;
+    readonly ms: number;
+    readonly animation: Animation;
+  };
 }
 
-/** Where a sliding card is now, following the CSS ease-out curve closely enough. */
-function currentPosition(motion: Motion | undefined, now: number, fallback: Point): Point {
+/** Where a sliding card is now, following the ease-out curve closely enough. */
+function currentPosition(track: Track, now: number): Point {
+  const motion = track.motion;
   if (motion === undefined || now >= motion.start + motion.ms) {
-    return fallback;
+    return track.at;
   }
   const t = Math.max(0, (now - motion.start) / motion.ms);
   const eased = 1 - (1 - t) ** 2;
   return {
-    x: motion.from.x + (motion.to.x - motion.from.x) * eased,
-    y: motion.from.y + (motion.to.y - motion.from.y) * eased,
+    x: motion.from.x + (track.at.x - motion.from.x) * eased,
+    y: motion.from.y + (track.at.y - motion.from.y) * eased,
   };
 }
 
-/** A CSS length or time as a number of its unit ("12px" → 12, "0.18s" → 0.18), or 0. */
+/** A CSS length or time as a number of its unit ("12px" → 12), or 0. */
 function cssNumber(text: string, unit: string): number {
   const value = Number(text.trim().slice(0, -unit.length));
   return text.trim().endsWith(unit) && Number.isFinite(value) ? value : 0;
 }
 
-/** The drag offset is still set on the table while the drop commits. */
-function withDragOffset(element: Element, point: Point): Point {
-  const style = getComputedStyle(element);
+/** The drag offset is set on each dragged card and is still there while the drop commits. */
+function dragOffset(element: HTMLElement): Point {
   return {
-    x: point.x + cssNumber(style.getPropertyValue("--drag-x"), "px"),
-    y: point.y + cssNumber(style.getPropertyValue("--drag-y"), "px"),
+    x: cssNumber(element.style.getPropertyValue("--drag-x"), "px"),
+    y: cssNumber(element.style.getPropertyValue("--drag-y"), "px"),
   };
 }
 
-function durationMs(element: Element): number {
-  const text = getComputedStyle(element).transitionDuration.split(",")[0] ?? "";
-  return text.trim().endsWith("ms") ? cssNumber(text, "ms") : cssNumber(text, "s") * 1000;
+const translate = ({ x, y }: Point) => `translate(${x}px, ${y}px)`;
+
+function stopMotion(element: HTMLElement | undefined, track: Track | undefined): void {
+  track?.motion?.animation.cancel();
+  if (element !== undefined) {
+    delete element.dataset["moving"];
+  }
+}
+
+/**
+ * Slides cards that changed place, all in one pass after each render: nothing is read
+ * from the page between the animations it starts, so moving 104 cards costs no more
+ * layout than moving one. A card starts from where it is on screen: where it was let go
+ * after a drag, or part way along a slide still running. Resizes don't animate.
+ */
+function useCardMotion(
+  tableRef: RefObject<HTMLElement | null>,
+  geometry: TableGeometry,
+  drag: DragView | undefined,
+): void {
+  const tracks = useRef(new Map<number, Track>());
+  const lastFrame = useRef<string | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    if (table === null) {
+      return;
+    }
+    // Pile bases move only when the table's size or shape changes.
+    const bases = [...geometry.bases.values()].map((base) => `${base.x},${base.y}`);
+    const frame = [geometry.cardWidth, ...bases].join(";");
+    const resized = lastFrame.current !== undefined && lastFrame.current !== frame;
+    lastFrame.current = frame;
+    // --move-ms is 0 with reduced motion. One read, before any animation starts.
+    const ms = resized ? 0 : cssNumber(getComputedStyle(table).getPropertyValue("--move-ms"), "ms");
+    const elements = new Map<number, HTMLElement>();
+    for (const element of table.querySelectorAll<HTMLElement>(".card-slot")) {
+      elements.set(Number(element.dataset["card"]), element);
+    }
+    const now = performance.now();
+    const next = new Map<number, Track>();
+    for (const placement of geometry.cards) {
+      const id = placement.card.id;
+      const element = elements.get(id);
+      const track = tracks.current.get(id);
+      const at = { x: placement.x, y: placement.y };
+      const dragging = inRun(drag, placement.pile, placement.index);
+      if (element === undefined || track === undefined || dragging) {
+        stopMotion(element, track);
+        next.set(id, { at, dragging });
+        continue;
+      }
+      const from = track.dragging
+        ? { x: track.at.x + dragOffset(element).x, y: track.at.y + dragOffset(element).y }
+        : currentPosition(track, now);
+      if ((from.x === at.x && from.y === at.y) || ms === 0) {
+        stopMotion(element, track);
+        next.set(id, { at, dragging });
+        continue;
+      }
+      track.motion?.animation.cancel();
+      // Lifted above resting cards while it slides. An attribute, not a class, so a
+      // re-render that changes the class list doesn't drop it.
+      element.dataset["moving"] = "";
+      const animation = element.animate(
+        [{ transform: translate(from) }, { transform: translate(at) }],
+        {
+          duration: ms,
+          easing: "ease-out",
+        },
+      );
+      animation.addEventListener("finish", () => {
+        delete element.dataset["moving"];
+      });
+      next.set(id, { at, dragging, motion: { from, start: now, ms, animation } });
+    }
+    tracks.current = next;
+  }, [tableRef, geometry, drag]);
 }
 
 interface CardSlotProps {
-  readonly placement: CardPlacement;
+  readonly card: Card;
+  readonly pile: PileId;
+  readonly index: number;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
   readonly label: string;
   /** The keyboard cursor is here, so this card takes part in tab order. */
   readonly focusable: boolean;
@@ -80,8 +166,14 @@ interface CardSlotProps {
   readonly shaking: boolean;
 }
 
+/** One card. Its props are all plain values, so only cards that change re-render. */
 const CardSlot = memo(function CardSlot({
-  placement,
+  card,
+  pile,
+  index,
+  x,
+  y,
+  z,
   label,
   focusable,
   compact,
@@ -91,60 +183,6 @@ const CardSlot = memo(function CardSlot({
   hinted,
   shaking,
 }: CardSlotProps) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const previous = useRef<Point | undefined>(undefined);
-  const motion = useRef<Motion | undefined>(undefined);
-  const wasDragging = useRef(dragging);
-  const { x, y, z, card } = placement;
-
-  useLayoutEffect(() => {
-    const element = ref.current;
-    const last = previous.current;
-    previous.current = { x, y };
-    const dropped = wasDragging.current && !dragging;
-    wasDragging.current = dragging;
-    if (element === null || last === undefined || dragging) {
-      return undefined;
-    }
-    // Start where the card is on screen: where it was let go after a drag, or part way
-    // along a move that is still running.
-    const now = performance.now();
-    const from = dropped
-      ? withDragOffset(element, last)
-      : currentPosition(motion.current, now, last);
-    const ms = durationMs(element);
-    if ((from.x === x && from.y === y) || ms === 0) {
-      // With no transition (reduced motion) the move is instant: no slide, no lift.
-      motion.current = undefined;
-      return undefined;
-    }
-    // Set the start explicitly: React moves the node when a card changes places in the
-    // list (onto a later pile), and a moved node would otherwise jump.
-    element.style.transition = "none";
-    element.style.transform = `translate(${from.x}px, ${from.y}px)`;
-    element.getBoundingClientRect();
-    element.style.transition = "";
-    element.style.transform = `translate(${x}px, ${y}px)`;
-    element.classList.add("moving");
-    motion.current = { from, to: { x, y }, start: now, ms };
-    const done = () => {
-      element.classList.remove("moving");
-      element.removeEventListener("transitionend", onEnd);
-    };
-    const onEnd = (event: TransitionEvent) => {
-      if (event.target === element && event.propertyName === "transform") {
-        done();
-      }
-    };
-    element.addEventListener("transitionend", onEnd);
-    const timer = setTimeout(done, ms + 500);
-    return () => {
-      clearTimeout(timer);
-      // Drop the lift; a move that starts straight away adds it back before painting.
-      done();
-    };
-  }, [x, y, dragging]);
-
   const className = [
     "card-slot",
     selected && "selected",
@@ -161,15 +199,14 @@ const CardSlot = memo(function CardSlot({
   };
   return (
     <button
-      ref={ref}
       type="button"
       className={className}
       style={style}
       tabIndex={focusable ? 0 : -1}
       aria-label={label}
       aria-pressed={selected}
-      data-pile={placement.pile}
-      data-index={placement.index}
+      data-pile={pile}
+      data-index={index}
       data-card={card.id}
     >
       <CardView card={card} compact={compact} />
@@ -294,7 +331,9 @@ export function Table({
   tableRef,
   handlers,
 }: TableProps) {
+  useCardMotion(tableRef, geometry, drag);
   const topIndex = new Map(state.piles.map((pile) => [pile.id, pile.cards.length - 1]));
+  const names = new Map(state.piles.map((pile) => [pile.id, pileName(state, pile.id)]));
   const kinds = new Map(state.piles.map((pile) => [pile.id, pile.kind]));
   const style: CSSProperties = {
     "--card-w": `${geometry.cardWidth}px`,
@@ -347,8 +386,13 @@ export function Table({
         return (
           <CardSlot
             key={card.id}
-            placement={placement}
-            label={`${cardLabel(card)}, ${pileName(state, pile)}`}
+            card={card}
+            pile={pile}
+            index={index}
+            x={placement.x}
+            y={placement.y}
+            z={placement.z}
+            label={`${cardLabel(card)}, ${names.get(pile) ?? ""}`}
             focusable={cursor?.pile === pile && cursor.index === index}
             compact={geometry.compact}
             selected={inRun(selection, pile, index)}
