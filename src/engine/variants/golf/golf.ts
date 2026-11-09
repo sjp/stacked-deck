@@ -1,5 +1,5 @@
-import { makeCards, withFace } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { withFace } from "../../cards.ts";
+import { shuffledDeck } from "../../rng.ts";
 import { findPile, getPile, makePile, pilesOfKind, topCard } from "../../state.ts";
 import type { GameState, Move, PileId, VariantOptions } from "../../types.ts";
 import type { LayoutContext, PileLayout, TableLayout, Variant } from "../../variant.ts";
@@ -31,8 +31,8 @@ export function golfScore(state: GameState): number {
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
-  const deck = shuffle(makeCards(), mulberry32(normalized)).map((card) => withFace(card, true));
+  const { seed: normalized, cards } = shuffledDeck(seed);
+  const deck = cards.map((card) => withFace(card, true));
   const tableau = COLUMNS.map((id, i) =>
     makePile(id, "tableau", deck.slice(i * DEPTH, (i + 1) * DEPTH)),
   );

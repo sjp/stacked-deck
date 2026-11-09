@@ -1,5 +1,5 @@
-import { makeCards, withFace } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { withFace } from "../../cards.ts";
+import { shuffledDeck } from "../../rng.ts";
 import {
   canAddToFoundation,
   canStackAlternating,
@@ -23,8 +23,8 @@ const FOUNDATIONS = ["f0", "f1", "f2", "f3"] as const;
 const TABLEAU = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7"] as const;
 
 function deal(seed: number, _options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
-  const deck = shuffle(makeCards(), mulberry32(normalized)).map((card) => withFace(card, true));
+  const { seed: normalized, cards } = shuffledDeck(seed);
+  const deck = cards.map((card) => withFace(card, true));
   const columns = TABLEAU.map((): (typeof deck)[number][] => []);
   deck.forEach((card, index) => {
     columns[index % TABLEAU.length]?.push(card);

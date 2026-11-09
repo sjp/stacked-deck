@@ -1,5 +1,5 @@
-import { makeCards, withFace } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { withFace } from "../../cards.ts";
+import { shuffledDeck } from "../../rng.ts";
 import {
   addScore,
   counter,
@@ -53,8 +53,7 @@ function rules(state: GameState) {
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
-  const deck = shuffle(makeCards(), mulberry32(normalized));
+  const { seed: normalized, cards: deck } = shuffledDeck(seed);
   const table = Array.from({ length: SIZE }, (_, i) => {
     const card = deck[i];
     return makePile(

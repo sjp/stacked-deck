@@ -1,6 +1,6 @@
 import type { Card, Suit } from "../../cards.ts";
-import { makeCards, withFace } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { withFace } from "../../cards.ts";
+import { shuffledDeck } from "../../rng.ts";
 import { transfer } from "../../rules.ts";
 import {
   addScore,
@@ -33,10 +33,9 @@ function suitCount(options: VariantOptions): 1 | 2 | 4 {
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
   const suits = suitCount(options);
   const set = SUIT_SETS[suits] ?? ["spades"];
-  const deck = shuffle(makeCards(set, 8 / set.length), mulberry32(normalized));
+  const { seed: normalized, cards: deck } = shuffledDeck(seed, set, 8 / set.length);
   let next = 0;
   const tableau = TABLEAU.map((id, column) => {
     const count = column < 4 ? 6 : 5;

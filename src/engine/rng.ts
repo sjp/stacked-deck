@@ -1,3 +1,5 @@
+import type { Card, Suit } from "./cards.ts";
+import { makeCards, SUITS } from "./cards.ts";
 /** Seeds are unsigned 32-bit integers, so a deal can be shared as a short number. */
 export function normalizeSeed(seed: number): number {
   return Math.trunc(seed) >>> 0;
@@ -38,4 +40,17 @@ export function hashString(text: string): number {
     hash = Math.imul(hash, 0x01_00_01_93);
   }
   return hash >>> 0;
+}
+
+/**
+ * The shuffled deck every deal starts from, with the seed in its normal form. Spider deals
+ * from fewer suits in more copies.
+ */
+export function shuffledDeck(
+  seed: number,
+  suits: readonly Suit[] = SUITS,
+  copies = 1,
+): { readonly seed: number; readonly cards: Card[] } {
+  const normalized = normalizeSeed(seed);
+  return { seed: normalized, cards: shuffle(makeCards(suits, copies), mulberry32(normalized)) };
 }

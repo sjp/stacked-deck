@@ -1,6 +1,6 @@
 import type { Card } from "../../cards.ts";
-import { makeCards, withFace } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { withFace } from "../../cards.ts";
+import { shuffledDeck } from "../../rng.ts";
 import {
   addScore,
   counter,
@@ -33,8 +33,8 @@ function passes(state: GameState): number {
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
-  const deck = shuffle(makeCards(), mulberry32(normalized)).map((card) => withFace(card, true));
+  const { seed: normalized, cards } = shuffledDeck(seed);
+  const deck = cards.map((card) => withFace(card, true));
   const stock = deck.slice(SIZE).map((card, i, all) => withFace(card, i === all.length - 1));
   return {
     variant: "pyramid",

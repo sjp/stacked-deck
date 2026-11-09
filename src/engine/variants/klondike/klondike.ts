@@ -1,6 +1,6 @@
-import { makeCards, withFace } from "../../cards.ts";
+import { withFace } from "../../cards.ts";
 import type { Card } from "../../cards.ts";
-import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
+import { shuffledDeck } from "../../rng.ts";
 import {
   canAddToFoundation,
   canStackAlternating,
@@ -52,8 +52,7 @@ function drawCount(state: GameState): number {
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
-  const normalized = normalizeSeed(seed);
-  const deck = shuffle(makeCards(), mulberry32(normalized));
+  const { seed: normalized, cards: deck } = shuffledDeck(seed);
   const piles: Pile[] = [];
   let next = 0;
   const tableau = TABLEAU.map((id, column) => {
