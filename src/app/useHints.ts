@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { hasUsefulMoves, rankHints } from "../engine/hints.ts";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move } from "../engine/types.ts";
@@ -46,6 +46,20 @@ export function useHints(
   const [shown, setShown] = useState<{ state: GameState; index: number }>();
   const [solved, setSolved] = useState<{ state: GameState; move: Move }>();
   const [dismissed, setDismissed] = useState<GameState>();
+  // The solver request for the hint being worked out; dropped when the position changes.
+  const request = useRef<{ state: GameState; controller: AbortController } | undefined>(undefined);
+  useEffect(() => {
+    if (request.current !== undefined && request.current.state !== state) {
+      request.current.controller.abort();
+      request.current = undefined;
+    }
+  }, [state]);
+  useEffect(
+    () => () => {
+      request.current?.controller.abort();
+    },
+    [],
+  );
 
   const index = shown?.state === state ? shown.index : undefined;
   // The first hint for a position comes from the solver when it finds a win in time.
@@ -65,8 +79,17 @@ export function useHints(
       }
       setShown({ state, index: index === undefined ? 0 : index + 1 });
       if (index === undefined) {
+        request.current?.controller.abort();
+        const controller = new AbortController();
+        request.current = { state, controller };
         const ask = async () => {
-          const found = await solverHint(variant.id, state, auto, SOLVER_HINT_MS);
+          const found = await solverHint(
+            variant.id,
+            state,
+            auto,
+            SOLVER_HINT_MS,
+            controller.signal,
+          );
           // A move that doesn't fit this position would point at the wrong cards.
           if (found !== undefined && variant.canMove(state, found)) {
             setSolved({ state, move: found });

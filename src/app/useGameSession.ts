@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import type { DealLink } from "./deals.ts";
@@ -65,7 +65,13 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
 
   const { end } = outcome;
   const [dealing, setDealing] = useState(false);
-  const dealRequest = useRef(0);
+  const dealRequest = useRef<AbortController | undefined>(undefined);
+  useEffect(
+    () => () => {
+      dealRequest.current?.abort();
+    },
+    [],
+  );
 
   const begin = useCallback(
     (dealOptions: VariantOptions, dealSeed: number | undefined) => {
@@ -84,22 +90,24 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       end(ending ?? endingFor(variant, state));
       // Drop the ended game's save now, in case the page closes before the next deal.
       save();
-      dealRequest.current += 1;
-      const request = dealRequest.current;
+      // A newer deal replaces any search still running.
+      dealRequest.current?.abort();
       if (dealSeed !== undefined || !settings.winnableOnly) {
         setDealing(false);
         begin(dealOptions, dealSeed);
         return;
       }
       setDealing(true);
+      const controller = new AbortController();
+      dealRequest.current = controller;
       const deal = async () => {
         let found: number | undefined;
         try {
-          found = await findWinnableSeed(variant, dealOptions);
+          found = await findWinnableSeed(variant, dealOptions, controller.signal);
         } catch (error) {
           console.warn("Could not find a winnable deal", error);
         }
-        if (request === dealRequest.current) {
+        if (!controller.signal.aborted) {
           setDealing(false);
           begin(dealOptions, found);
         }

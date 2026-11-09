@@ -46,9 +46,10 @@ export function listedSeed(
 export async function findWinnableSeed(
   variant: Variant,
   options: VariantOptions,
+  signal?: AbortSignal,
 ): Promise<number | undefined> {
   if (SOLVE_AT_RUNTIME.has(dealKey(variant, options))) {
-    const seed = await solveRandomDeal(variant.id, options, RUNTIME_BUDGET_MS, PER_SEED_MS);
+    const seed = await solveRandomDeal(variant.id, options, RUNTIME_BUDGET_MS, PER_SEED_MS, signal);
     if (seed !== undefined) {
       return seed;
     }
