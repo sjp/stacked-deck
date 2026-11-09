@@ -8,7 +8,7 @@ export interface Step {
 }
 
 /** Guards against a variant whose automatic moves never settle. */
-const MAX_AUTO_MOVES = 500;
+export const MAX_AUTO_MOVES = 500;
 
 /** Applies automatic moves until none are left. */
 export function settle(
