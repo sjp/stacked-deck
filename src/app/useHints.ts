@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { hasUsefulMoves, rankHints } from "../engine/hints.ts";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move } from "../engine/types.ts";
-import type { Variant } from "../engine/variant.ts";
+import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import type { Highlight } from "../ui/Table.tsx";
 import { solverHint } from "./solverClient.ts";
 
@@ -31,8 +31,16 @@ export function highlightFor(state: GameState, move: Move): Highlight {
   return stock === undefined ? {} : { from: { pile: stock.id, index: top(stock.id) } };
 }
 
-/** Hints for the current position; pressing again cycles to the next suggestion. */
-export function useHints(variant: Variant, state: GameState, active: boolean) {
+/**
+ * Hints for the current position; pressing again cycles to the next suggestion. `auto` is
+ * the player's automatic-move setting, which the solver needs to start from this position.
+ */
+export function useHints(
+  variant: Variant,
+  state: GameState,
+  auto: AutoMoveOptions,
+  active: boolean,
+) {
   const hints = useMemo(() => rankHints(variant, state), [variant, state]);
   const stuck = useMemo(() => active && !hasUsefulMoves(variant, state), [active, variant, state]);
   const [shown, setShown] = useState<{ state: GameState; index: number }>();
@@ -58,8 +66,9 @@ export function useHints(variant: Variant, state: GameState, active: boolean) {
       setShown({ state, index: index === undefined ? 0 : index + 1 });
       if (index === undefined) {
         const ask = async () => {
-          const found = await solverHint(variant.id, state, SOLVER_HINT_MS);
-          if (found !== undefined) {
+          const found = await solverHint(variant.id, state, auto, SOLVER_HINT_MS);
+          // A move that doesn't fit this position would point at the wrong cards.
+          if (found !== undefined && variant.canMove(state, found)) {
             setSolved({ state, move: found });
           }
         };

@@ -122,6 +122,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
 
   return useMemo(
     () => ({
+      auto,
       game,
       state,
       won,
@@ -163,6 +164,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       },
     }),
     [
+      auto,
       canFinish,
       dealing,
       dispatch,

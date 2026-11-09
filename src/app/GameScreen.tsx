@@ -30,7 +30,7 @@ export function GameScreen({ variant, link }: Props) {
   });
   const { game, state, start, won } = session;
 
-  const hints = useHints(variant, state, !won && !session.finishing);
+  const hints = useHints(variant, state, session.auto, !won && !session.finishing);
   const noMovesOpen = hints.noUsefulMoves && !settingsOpen;
   if (noMovesOpen !== noMovesShown) {
     setNoMovesShown(noMovesOpen);

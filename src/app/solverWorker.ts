@@ -9,10 +9,12 @@ function handle(request: SolverRequest): SolverResponse {
     const result =
       variant === undefined
         ? undefined
-        : solve(variant, request.state, {
-            maxNodes: Number.POSITIVE_INFINITY,
-            maxMs: request.budgetMs,
-          });
+        : solve(
+            variant,
+            request.state,
+            { maxNodes: Number.POSITIVE_INFINITY, maxMs: request.budgetMs },
+            { startAuto: request.auto },
+          );
     return {
       type: "hint",
       id: request.id,

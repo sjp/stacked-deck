@@ -1,4 +1,5 @@
 import type { GameState, Move, VariantOptions } from "../engine/types.ts";
+import type { AutoMoveOptions } from "../engine/variant.ts";
 
 export type SolverRequest =
   | {
@@ -15,6 +16,8 @@ export type SolverRequest =
       readonly id: number;
       readonly variant: string;
       readonly state: GameState;
+      /** The player's automatic moves, which the position on screen already has. */
+      readonly auto: AutoMoveOptions;
       readonly budgetMs: number;
     };
 

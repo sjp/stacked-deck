@@ -1,4 +1,5 @@
 import type { GameState, Move, VariantOptions } from "../engine/types.ts";
+import type { AutoMoveOptions } from "../engine/variant.ts";
 import type { SolverRequest, SolverResponse } from "./solverProtocol.ts";
 
 let worker: Worker | undefined;
@@ -44,8 +45,9 @@ export async function solveRandomDeal(
 export async function solverHint(
   variant: string,
   state: GameState,
+  auto: AutoMoveOptions,
   budgetMs: number,
 ): Promise<Move | undefined> {
-  const response = await ask({ type: "hint", id: nextId++, variant, state, budgetMs });
+  const response = await ask({ type: "hint", id: nextId++, variant, state, auto, budgetMs });
   return response?.type === "hint" ? response.move : undefined;
 }
