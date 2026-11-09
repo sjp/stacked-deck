@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { HintLine } from "../engine/hintLine.ts";
+import { hintLine } from "../engine/hintLine.ts";
 import { hasUsefulMoves, rankHints } from "../engine/hints.ts";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move } from "../engine/types.ts";
@@ -34,6 +36,11 @@ export function highlightFor(state: GameState, move: Move): Highlight {
 /**
  * Hints for the current position; pressing again cycles to the next suggestion. `auto` is
  * the player's automatic-move setting, which the solver needs to start from this position.
+ *
+ * The first hint for a position comes from the solver's winning line. The line is kept, so
+ * while the player follows it (or undoes back onto it) the next hint is its next move,
+ * found at once and never leading back to a position already passed; leaving the line
+ * means a fresh search.
  */
 export function useHints(
   variant: Variant,
@@ -48,6 +55,7 @@ export function useHints(
   const [dismissed, setDismissed] = useState<GameState>();
   // The solver request for the hint being worked out; dropped when the position changes.
   const request = useRef<{ state: GameState; controller: AbortController } | undefined>(undefined);
+  const line = useRef<HintLine | undefined>(undefined);
   useEffect(() => {
     if (request.current !== undefined && request.current.state !== state) {
       request.current.controller.abort();
@@ -62,7 +70,7 @@ export function useHints(
   );
 
   const index = shown?.state === state ? shown.index : undefined;
-  // The first hint for a position comes from the solver when it finds a win in time.
+  // The first hint for a position comes from the solver's line when it finds a win in time.
   const solverMove = index === 0 && solved?.state === state ? solved.move : undefined;
   const move =
     solverMove ?? (index === undefined ? undefined : hints[index % Math.max(1, hints.length)]);
@@ -80,6 +88,12 @@ export function useHints(
       setShown({ state, index: index === undefined ? 0 : index + 1 });
       if (index === undefined) {
         request.current?.controller.abort();
+        request.current = undefined;
+        const kept = line.current?.variant === variant ? line.current.next(state) : undefined;
+        if (kept !== undefined) {
+          setSolved({ state, move: kept });
+          return true;
+        }
         const controller = new AbortController();
         request.current = { state, controller };
         const ask = async () => {
@@ -90,7 +104,11 @@ export function useHints(
             SOLVER_HINT_MS,
             controller.signal,
           );
-          const found = moves?.[0];
+          if (moves === undefined) {
+            return;
+          }
+          line.current = hintLine(variant, state, moves, auto);
+          const found = moves[0];
           // A move that doesn't fit this position would point at the wrong cards.
           if (found !== undefined && variant.canMove(state, found)) {
             setSolved({ state, move: found });
