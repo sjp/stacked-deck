@@ -8,7 +8,7 @@ export interface HintLine {
   readonly variant: Variant;
   /**
    * The line's next move from a position on screen, or undefined when the position isn't
-   * on the line (or the line's move doesn't lead to its next position from there).
+   * on the line (or nothing playable there keeps to it).
    */
   next(state: GameState): Move | undefined;
 }
@@ -22,7 +22,8 @@ export interface HintLine {
  * Positions are compared after settling with `SOLVER_AUTO`, so a player with fewer
  * automatic moves on still matches. A move is served only if it is legal on screen and
  * leads to the line's next position, so following the line never goes back to a position
- * already passed.
+ * already passed. When the line's move has to wait for a card the player's automatic moves
+ * left out, the hint is to move that card up first.
  */
 export function hintLine(
   variant: Variant,
@@ -33,29 +34,39 @@ export function hintLine(
   const key = (state: GameState) => variant.stateKey?.(state) ?? pilesKey(state);
   const settledKey = (state: GameState) => key(settle(variant, state, SOLVER_AUTO).state);
 
-  // The key of each position along the line, and which one it is. On a repeat (which the
-  // solver doesn't produce), the later position wins, being nearer the end.
+  // The key of each position along the line. Settled, the start can share a key with a
+  // later position: when the player's automatic moves left cards out, the line may begin
+  // by moving them up.
   const keys: string[] = [];
-  const index = new Map<string, number>();
   let position = settle(variant, start, startAuto).state;
   keys.push(settledKey(position));
   for (const move of moves) {
     position = settle(variant, variant.applyMove(position, move), SOLVER_AUTO).state;
     keys.push(key(position));
   }
+  const places = new Map<string, number[]>();
   for (const [at, positionKey] of keys.entries()) {
-    index.set(positionKey, at);
+    places.set(positionKey, [...(places.get(positionKey) ?? []), at]);
   }
 
   return {
     variant,
     next(state) {
-      const at = index.get(settledKey(state));
-      const move = at === undefined ? undefined : moves[at];
-      if (at === undefined || move === undefined || !variant.canMove(state, move)) {
-        return undefined;
+      const settled = settle(variant, state, SOLVER_AUTO);
+      // Nearest the end first, among the places this position matches.
+      const matches = places.get(key(settled.state))?.toReversed() ?? [];
+      for (const at of matches) {
+        const move = moves[at];
+        if (
+          move !== undefined &&
+          variant.canMove(state, move) &&
+          settledKey(variant.applyMove(state, move)) === keys[at + 1]
+        ) {
+          return move;
+        }
       }
-      return settledKey(variant.applyMove(state, move)) === keys[at + 1] ? move : undefined;
+      const waiting = matches.length > 0 ? settled.moves[0] : undefined;
+      return waiting !== undefined && variant.canMove(state, waiting) ? waiting : undefined;
     },
   };
 }
