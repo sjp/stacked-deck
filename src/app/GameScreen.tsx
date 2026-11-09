@@ -20,15 +20,21 @@ export function GameScreen({ variant, seed }: Props) {
   const { settings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Mirrors whether the no-moves prompt is open; it depends on the session, which needs it.
+  const [noMovesShown, setNoMovesShown] = useState(false);
   const session = useGameSession({
     variant,
     seed,
     settings,
-    paused: settingsOpen || helpOpen,
+    paused: settingsOpen || helpOpen || noMovesShown,
   });
   const { game, state, start, won } = session;
 
   const hints = useHints(variant, state, !won && !session.finishing);
+  const noMovesOpen = hints.noUsefulMoves && !settingsOpen;
+  if (noMovesOpen !== noMovesShown) {
+    setNoMovesShown(noMovesOpen);
+  }
 
   const [requestedSeed, setRequestedSeed] = useState(seed);
   if (seed !== requestedSeed) {
@@ -189,7 +195,7 @@ export function GameScreen({ variant, seed }: Props) {
           },
         }}
         noMoves={{
-          open: hints.noUsefulMoves && !settingsOpen,
+          open: noMovesOpen,
           canUndo: session.canUndo,
           onNewGame: () => {
             startNew(game.options, "loss");
