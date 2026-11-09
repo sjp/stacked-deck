@@ -10,6 +10,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.table.is-dragging,
+.table.is-dragging .card-slot,
+.table.is-dragging .pile-base {
+  cursor: grabbing;
+}
+
 .pile-base,
 .card-slot {
   position: absolute;
