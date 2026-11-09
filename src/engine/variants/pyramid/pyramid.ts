@@ -4,7 +4,6 @@ import { mulberry32, normalizeSeed, shuffle } from "../../rng.ts";
 import {
   addScore,
   counter,
-  findPile,
   getPile,
   makePile,
   playKey,
@@ -52,37 +51,61 @@ function deal(seed: number, options: VariantOptions): GameState {
   };
 }
 
-function isEmpty(state: GameState, id: PileId): boolean {
-  return (findPile(state, id)?.cards.length ?? 0) === 0;
+/** The pyramid position of each pile, with the two piles overlapping it from below. */
+const POSITION_BY_ID = new Map(
+  POSITIONS.map(({ row, column, id }) => [
+    id,
+    {
+      row,
+      covers: row === ROWS - 1 ? [] : [pyramidId(row + 1, column), pyramidId(row + 1, column + 1)],
+    },
+  ]),
+);
+
+type PileLookup = ReadonlyMap<PileId, Pile>;
+
+const lookup = (state: GameState): PileLookup =>
+  new Map(state.piles.map((pile) => [pile.id, pile]));
+
+function isEmpty(piles: PileLookup, id: PileId): boolean {
+  return (piles.get(id)?.cards.length ?? 0) === 0;
+}
+
+function exposed(piles: PileLookup, id: PileId): boolean {
+  const position = POSITION_BY_ID.get(id);
+  return (
+    position !== undefined &&
+    !isEmpty(piles, id) &&
+    position.covers.every((cover) => isEmpty(piles, cover))
+  );
 }
 
 /** A pyramid card is free once both cards overlapping it from the row below are gone. */
 export function isExposed(state: GameState, id: PileId): boolean {
-  const position = POSITIONS.find((item) => item.id === id);
-  if (position === undefined || isEmpty(state, id)) {
-    return false;
-  }
-  const { row, column } = position;
-  return (
-    row === ROWS - 1 ||
-    (isEmpty(state, pyramidId(row + 1, column)) && isEmpty(state, pyramidId(row + 1, column + 1)))
-  );
+  return exposed(lookup(state), id);
 }
 
 /** Cards that can be paired: exposed pyramid cards and the tops of the stock and waste. */
-function isAvailable(state: GameState, id: PileId): boolean {
+function isFree(piles: PileLookup, id: PileId): boolean {
   if (id === STOCK || id === WASTE) {
-    return topCard(getPile(state, id))?.faceUp === true;
+    const pile = piles.get(id);
+    return pile !== undefined && topCard(pile)?.faceUp === true;
   }
-  return isExposed(state, id);
+  return exposed(piles, id);
+}
+
+function isAvailable(state: GameState, id: PileId): boolean {
+  return isFree(lookup(state), id);
 }
 
 function availablePiles(state: GameState): Pile[] {
-  return state.piles.filter((pile) => pile.kind !== "foundation" && isAvailable(state, pile.id));
+  const piles = lookup(state);
+  return state.piles.filter((pile) => pile.kind !== "foundation" && isFree(piles, pile.id));
 }
 
 function canRemove(state: GameState, piles: readonly PileId[]): boolean {
-  const cards = piles.map((id) => (isAvailable(state, id) ? findPile(state, id) : undefined));
+  const all = lookup(state);
+  const cards = piles.map((id) => (isFree(all, id) ? all.get(id) : undefined));
   const ranks = cards.map((pile) => (pile === undefined ? undefined : topCard(pile)?.rank));
   if (ranks.some((rank) => rank === undefined)) {
     return false;
@@ -118,9 +141,10 @@ function showStockTop(cards: readonly Card[]): Card[] {
 }
 
 function rowsCleared(state: GameState): number {
+  const piles = lookup(state);
   let rows = 0;
   for (let row = 0; row < ROWS; row++) {
-    if (POSITIONS.filter((item) => item.row === row).every(({ id }) => isEmpty(state, id))) {
+    if (POSITIONS.every((item) => item.row !== row || isEmpty(piles, item.id))) {
       rows++;
     }
   }
@@ -161,22 +185,25 @@ function applyMove(state: GameState, move: Move): GameState {
   }
   changes[DISCARD] = [...getPile(state, DISCARD).cards, ...removed];
   const next = withPiles(state, changes);
-  const newRows = rowsCleared(next) - rowsCleared(state);
-  const cleared = rowsCleared(next) === ROWS ? PYRAMID_POINTS.cleared : 0;
+  const rowsAfter = rowsCleared(next);
+  const newRows = rowsAfter - rowsCleared(state);
+  const cleared = rowsAfter === ROWS ? PYRAMID_POINTS.cleared : 0;
   return addScore(next, PYRAMID_POINTS.removal + newRows * PYRAMID_POINTS.row + cleared);
 }
 
 function legalMoves(state: GameState): Move[] {
   const moves: Move[] = [];
   const available = availablePiles(state);
+  // Every pile here is available, so a pair only has to add up to 13.
+  const ranks = available.map((pile) => topCard(pile)?.rank ?? 0);
   available.forEach((pile, i) => {
-    const card = topCard(pile);
-    if (card?.rank === 13) {
+    if (ranks[i] === 13) {
       moves.push({ kind: "remove", piles: [pile.id] });
       return;
     }
-    for (const other of available.slice(i + 1)) {
-      if (canRemove(state, [pile.id, other.id])) {
+    for (let j = i + 1; j < available.length; j++) {
+      const other = available[j];
+      if (other !== undefined && (ranks[i] ?? 0) + (ranks[j] ?? 0) === 13) {
         moves.push({ kind: "remove", piles: [pile.id, other.id] });
       }
     }
@@ -294,7 +321,7 @@ export const pyramid: Variant = {
   canMove,
   applyMove,
   autoMove: () => undefined,
-  isWon: (state) => POSITIONS.every(({ id }) => isEmpty(state, id)),
+  isWon: (state) => rowsCleared(state) === ROWS,
   canPickUp,
   dropMove,
   tapMoves,
