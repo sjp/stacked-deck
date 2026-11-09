@@ -1,5 +1,5 @@
 import { settle } from "./game.ts";
-import { hintScore } from "./hints.ts";
+import { rankHints } from "./hints.ts";
 import { pilesKey } from "./state.ts";
 import type { GameState, Move } from "./types.ts";
 import type { AutoMoveOptions, Variant } from "./variant.ts";
@@ -42,16 +42,6 @@ interface Frame {
   next: number;
 }
 
-/** Moves worth trying, best first. Shuffles that make no progress are skipped. */
-function orderedMoves(variant: Variant, state: GameState): Move[] {
-  return variant
-    .legalMoves(state)
-    .map((move) => ({ move, score: hintScore(variant, state, move) }))
-    .filter(({ score }) => score > 0)
-    .toSorted((a, b) => b.score - a.score)
-    .map(({ move }) => move);
-}
-
 /**
  * Depth-first search for a win, remembering positions already seen. It searches with
  * every card known (for Klondike, that is how a "winnable" deal is usually defined).
@@ -68,7 +58,7 @@ export function solve(
   const first = settle(variant, start, startAuto).state;
   const seen = new Set<string>([key(first)]);
   const path: Move[] = [];
-  const stack: Frame[] = [{ state: first, moves: orderedMoves(variant, first), next: 0 }];
+  const stack: Frame[] = [{ state: first, moves: rankHints(variant, first), next: 0 }];
   let nodes = 0;
 
   if (variant.isWon(first)) {
@@ -100,7 +90,7 @@ export function solve(
     }
     seen.add(nextKey);
     path.push(move);
-    stack.push({ state: next, moves: orderedMoves(variant, next), next: 0 });
+    stack.push({ state: next, moves: rankHints(variant, next), next: 0 });
   }
   return { status: "exhausted", nodes };
 }

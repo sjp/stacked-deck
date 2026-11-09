@@ -1,6 +1,6 @@
 import type { Card } from "./cards.ts";
 import type { GameState, Move, Pile } from "./types.ts";
-import { findPile, pilesKey } from "./state.ts";
+import { pilesKey } from "./state.ts";
 import type { Variant } from "./variant.ts";
 
 /** Hints below this are only stock moves or shuffles, which don't make progress. */
@@ -45,7 +45,12 @@ function reparentScore(
  * card (more hidden cards first), then moves that empty a column, then other building
  * moves, then the stock. Moves between equivalent places score zero.
  */
-export function hintScore(variant: Variant, state: GameState, move: Move): number {
+export function hintScore(
+  variant: Variant,
+  state: GameState,
+  move: Move,
+  piles: ReadonlyMap<string, Pile> = pileMap(state),
+): number {
   if (move.kind === "flip") {
     return 900;
   }
@@ -58,8 +63,8 @@ export function hintScore(variant: Variant, state: GameState, move: Move): numbe
   if (move.kind === "recycle") {
     return 40;
   }
-  const source = findPile(state, move.from);
-  const target = findPile(state, move.to);
+  const source = piles.get(move.from);
+  const target = piles.get(move.to);
   const card = source?.cards[move.index];
   if (source === undefined || target === undefined || card === undefined) {
     return 0;
@@ -96,11 +101,19 @@ export function hintScore(variant: Variant, state: GameState, move: Move): numbe
   return top?.suit === card.suit ? 260 : 200;
 }
 
-/** Legal moves worth suggesting, best first. Moves that make no progress are left out. */
+function pileMap(state: GameState): Map<string, Pile> {
+  return new Map(state.piles.map((pile) => [pile.id, pile]));
+}
+
+/**
+ * Legal moves worth suggesting, best first. Moves that make no progress are left out. The
+ * solver tries moves in this order too.
+ */
 export function rankHints(variant: Variant, state: GameState): Move[] {
+  const piles = pileMap(state);
   return variant
     .legalMoves(state)
-    .map((move) => ({ move, score: hintScore(variant, state, move) }))
+    .map((move) => ({ move, score: hintScore(variant, state, move, piles) }))
     .filter(({ score }) => score > 0)
     .toSorted((a, b) => b.score - a.score)
     .map(({ move }) => move);
