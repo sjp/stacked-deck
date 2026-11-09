@@ -138,6 +138,10 @@ export function GameTable({
     if (table === undefined || cursor === undefined || dealing) {
       return;
     }
+    // Leave browser shortcuts (Ctrl+F, Cmd+D, Alt+arrows) alone.
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
     const direction = ARROWS[event.key];
     const key = event.key.toLowerCase();
     if (direction !== undefined) {
