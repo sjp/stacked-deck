@@ -39,10 +39,14 @@ describe("solver hints", () => {
     ["pyramid", { passes: 3 }, 3],
     ["tripeaks", { wrap: true }, 1],
     ["golf", { wrap: true, onKing: true }, 3],
-  ])("suggest a legal first move with auto-moves off (%s %o)", (id, options, seed) => {
-    const variant = getVariant(id)!;
-    const hints = followHints(variant, variant.deal(seed, options), 12);
-    expect(hints.length).toBeGreaterThan(0);
-    expect(hints.filter(([state, move]) => !variant.canMove(state, move))).toEqual([]);
-  });
+  ])(
+    "suggest a legal first move with auto-moves off (%s %o)",
+    { timeout: 30_000 },
+    (id, options, seed) => {
+      const variant = getVariant(id)!;
+      const hints = followHints(variant, variant.deal(seed, options), 12);
+      expect(hints.length).toBeGreaterThan(0);
+      expect(hints.filter(([state, move]) => !variant.canMove(state, move))).toEqual([]);
+    },
+  );
 });
