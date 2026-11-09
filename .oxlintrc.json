@@ -140,6 +140,23 @@
   },
   "overrides": [
     {
+      // The UI draws the table and its controls; the app screens use it, not the reverse.
+      "files": ["src/ui/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/app/**"],
+                "message": "The UI must not depend on the app layer."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
         "max-nested-callbacks": "off",

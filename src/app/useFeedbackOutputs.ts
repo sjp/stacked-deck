@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { onFeedback } from "./feedback.ts";
+import { onFeedback } from "../ui/feedback.ts";
 import { createHaptics } from "./haptics.ts";
 import { createSoundPlayer } from "./sound.ts";
 

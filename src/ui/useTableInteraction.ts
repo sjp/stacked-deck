@@ -7,7 +7,7 @@ import type {
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move, PileId } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
-import { emitFeedback } from "../app/feedback.ts";
+import { emitFeedback } from "./feedback.ts";
 import type { Rect, TableGeometry } from "./geometry.ts";
 import { containsPoint, overlapArea } from "./geometry.ts";
 

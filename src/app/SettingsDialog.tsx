@@ -7,8 +7,8 @@ import { winnableAvailable } from "./deals.ts";
 import type { AnimationSpeed } from "./settings.ts";
 import { ANIMATION_SPEEDS, CARD_BACKS, hapticsSupported, sameOptions } from "./settings.ts";
 import { useSettings } from "./settingsContext.ts";
-import type { CardBack } from "./theme.ts";
-import { isThemePreference, THEMES } from "./theme.ts";
+import type { CardBack } from "../ui/theme.ts";
+import { isThemePreference, THEMES } from "../ui/theme.ts";
 
 const LABELS: Readonly<Record<string, string>> = {
   system: "System",

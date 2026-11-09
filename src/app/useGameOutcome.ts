@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { hasUsefulMoves } from "../engine/hints.ts";
 import type { GameState } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
-import { emitFeedback } from "./feedback.ts";
+import { emitFeedback } from "../ui/feedback.ts";
 import { recordAbandon, recordLoss, recordWin, statsKey } from "./stats.ts";
 import { updateRecord } from "./statsStore.ts";
 import type { Game } from "./useGame.ts";

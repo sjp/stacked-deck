@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { nextFoundationMove } from "../engine/game.ts";
 import type { GameState } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
-import { emitFeedback } from "./feedback.ts";
+import { emitFeedback } from "../ui/feedback.ts";
 import type { AnimationSpeed } from "./settings.ts";
 import { MOVE_MS } from "./settings.ts";
 import type { GameAction } from "./useGame.ts";

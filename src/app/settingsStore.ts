@@ -1,7 +1,7 @@
 import type { Settings } from "./settings.ts";
 import { MOVE_MS, parseSettings } from "./settings.ts";
 import { readStored, writeStored } from "./storage.ts";
-import { applyCardStyle, applyTheme } from "./theme.ts";
+import { applyCardStyle, applyTheme } from "../ui/theme.ts";
 
 const KEY = "settings";
 

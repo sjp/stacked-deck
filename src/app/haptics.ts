@@ -1,4 +1,4 @@
-import type { FeedbackEvent } from "./feedback.ts";
+import type { FeedbackEvent } from "../ui/feedback.ts";
 
 /** Vibration patterns in milliseconds. Events without one don't vibrate. */
 export const HAPTIC_PATTERNS: Readonly<Partial<Record<FeedbackEvent, number | readonly number[]>>> =

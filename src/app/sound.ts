@@ -1,4 +1,4 @@
-import type { FeedbackEvent } from "./feedback.ts";
+import type { FeedbackEvent } from "../ui/feedback.ts";
 
 /** The parts of the Web Audio API the sounds use, so tests can supply a fake. */
 export type AudioContextFactory = () => AudioContext;

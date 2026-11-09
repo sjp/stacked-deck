@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FocusEvent, KeyboardEvent, MouseEvent } from "react";
-import { emitFeedback } from "../app/feedback.ts";
+import { emitFeedback } from "./feedback.ts";
 import { describeMove } from "../engine/describe.ts";
 import type { GameState, Move } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";

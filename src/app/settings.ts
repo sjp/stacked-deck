@@ -1,7 +1,7 @@
 import type { OptionValue, VariantOptions } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
-import type { CardBack, ThemePreference } from "./theme.ts";
-import { isThemePreference } from "./theme.ts";
+import type { CardBack, ThemePreference } from "../ui/theme.ts";
+import { isThemePreference } from "../ui/theme.ts";
 
 export type AnimationSpeed = "off" | "fast" | "normal" | "slow";
 

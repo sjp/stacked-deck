@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { makeCards, withFace } from "../engine/cards.ts";
-import type { CardBack, ThemePreference } from "../app/theme.ts";
-import { applyCardStyle, applyTheme, isThemePreference } from "../app/theme.ts";
+import type { CardBack, ThemePreference } from "./theme.ts";
+import { applyCardStyle, applyTheme, isThemePreference } from "./theme.ts";
 import { CardView } from "./CardView.tsx";
 
 const CARDS = makeCards().map((card) => withFace(card, true));
