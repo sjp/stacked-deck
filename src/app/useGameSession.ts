@@ -7,7 +7,7 @@ import { optionsFor } from "./settings.ts";
 import { useAutoFinish } from "./useAutoFinish.ts";
 import { useAutoSave } from "./useAutoSave.ts";
 import type { Ending } from "./useGameOutcome.ts";
-import { useGameOutcome } from "./useGameOutcome.ts";
+import { endingFor, useGameOutcome } from "./useGameOutcome.ts";
 import {
   currentState,
   hasStarted,
@@ -71,7 +71,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   /** Ends the current game (as lost or abandoned) and deals another. */
   const start = useCallback(
     (dealOptions: VariantOptions, dealSeed: number | undefined, ending?: Ending) => {
-      end(ending ?? (variant.isStuck?.(state) === true ? "loss" : "abandon"));
+      end(ending ?? endingFor(variant, state));
       dealRequest.current += 1;
       const request = dealRequest.current;
       if (dealSeed !== undefined || !settings.winnableOnly) {

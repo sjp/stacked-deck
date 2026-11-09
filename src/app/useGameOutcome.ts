@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { hasUsefulMoves } from "../engine/hints.ts";
+import type { GameState } from "../engine/types.ts";
+import type { Variant } from "../engine/variant.ts";
 import { emitFeedback } from "./feedback.ts";
 import { recordAbandon, recordLoss, recordWin, statsKey } from "./stats.ts";
 import { updateRecord } from "./statsStore.ts";
@@ -7,6 +10,14 @@ import { currentState, hasStarted, moveCount } from "./useGame.ts";
 import type { Timer } from "./useTimer.ts";
 
 export type Ending = "abandon" | "loss";
+
+/**
+ * How a game that is left unfinished counts: a loss when nothing useful is left to do
+ * (at most cycling the stock), otherwise an abandonment.
+ */
+export function endingFor(variant: Variant, state: GameState): Ending {
+  return hasUsefulMoves(variant, state) ? "abandon" : "loss";
+}
 
 /**
  * Records each game's result once: a win when it happens, or a loss or abandonment when
