@@ -18,7 +18,12 @@
   --felt: #2f7a52;
   --felt-shade: #286a47;
   --felt-fg: #f1f7f3;
-  --felt-slot: rgb(255 255 255 / 0.22);
+  /* Empty pile outlines need 3:1 against the felt, their labels 4.5:1. */
+  --felt-slot: rgb(255 255 255 / 0.65);
+  --felt-slot-label: rgb(255 255 255 / 0.9);
+  /* A two-tone ring shows on the felt and on card faces alike. */
+  --table-focus: #ffffff;
+  --table-focus-edge: #0b1f14;
 
   --card-face: #ffffff;
   --card-edge: rgb(0 0 0 / 0.28);
@@ -52,7 +57,10 @@
     --felt: #133a26;
     --felt-shade: #10311f;
     --felt-fg: #d9e7de;
-    --felt-slot: rgb(255 255 255 / 0.14);
+    --felt-slot: rgb(255 255 255 / 0.5);
+    --felt-slot-label: rgb(255 255 255 / 0.6);
+    --table-focus: #8ab4ff;
+    --table-focus-edge: #000000;
 
     --card-face: #e9e6de;
     --card-edge: rgb(0 0 0 / 0.5);
@@ -86,7 +94,10 @@
   --felt: #133a26;
   --felt-shade: #10311f;
   --felt-fg: #d9e7de;
-  --felt-slot: rgb(255 255 255 / 0.14);
+  --felt-slot: rgb(255 255 255 / 0.5);
+  --felt-slot-label: rgb(255 255 255 / 0.6);
+  --table-focus: #8ab4ff;
+  --table-focus-edge: #000000;
 
   --card-face: #e9e6de;
   --card-edge: rgb(0 0 0 / 0.5);

@@ -29,12 +29,11 @@
 }
 
 .pile-base {
-  color: var(--felt-slot);
   border-radius: calc(var(--card-w) * 0.07);
   box-shadow: inset 0 0 0 2px var(--felt-slot);
   display: grid;
   place-items: center;
-  color: var(--felt-slot);
+  color: var(--felt-slot-label);
   font-weight: 700;
   font-size: calc(var(--card-w) * 0.4);
 }
