@@ -50,8 +50,9 @@ export default defineConfig({
       registerType: "prompt",
       // main.tsx registers the service worker; an inline script would break the CSP.
       injectRegister: false,
-      includeAssets: ["favicon.svg", "favicon.ico", "apple-touch-icon-180x180.png"],
       manifest: {
+        // A stable identity for the installed app, whatever the start URL becomes.
+        id: "./",
         name: "Stacked Deck",
         short_name: "Stacked Deck",
         description:
@@ -75,7 +76,10 @@ export default defineConfig({
           },
         ],
       },
-      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest}"] },
+      // The glob covers the icons in public/ and the plugin adds the manifest, so each
+      // file is precached once.
+      includeManifestIcons: false,
+      workbox: { globPatterns: ["**/*.{js,css,html,svg,png,ico}"] },
     }),
   ],
   // Agent worktrees live under .claude/; keep their copies of the tests out of the run.
