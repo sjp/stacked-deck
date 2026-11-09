@@ -192,7 +192,16 @@ export function WinAnimation({ cards, onDone }: Props) {
       }
     };
     document.addEventListener("visibilitychange", onHidden);
+    // Keyboard users can skip it too.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        finish();
+      }
+    };
+    globalThis.addEventListener("keydown", onKey);
     return () => {
+      globalThis.removeEventListener("keydown", onKey);
       cancelAnimationFrame(frame);
       globalThis.removeEventListener("resize", fit);
       document.removeEventListener("visibilitychange", onHidden);
