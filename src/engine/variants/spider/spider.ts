@@ -1,7 +1,7 @@
 import type { Card, Suit } from "../../cards.ts";
 import { withFace } from "../../cards.ts";
 import { shuffledDeck } from "../../rng.ts";
-import { transfer } from "../../rules.ts";
+import { canFlip, flipTop, transfer } from "../../rules.ts";
 import {
   addScore,
   findPile,
@@ -118,9 +118,7 @@ function canMove(state: GameState, move: Move): boolean {
     return canDeal(state);
   }
   if (move.kind === "flip") {
-    const pile = findPile(state, move.pile);
-    const top = pile === undefined ? undefined : topCard(pile);
-    return pile?.kind === "tableau" && top !== undefined && !top.faceUp;
+    return canFlip(state, move.pile);
   }
   return move.kind === "move" && canMoveCards(state, move.from, move.index, move.to);
 }
@@ -139,11 +137,7 @@ function applyMove(state: GameState, move: Move): GameState {
     return addScore(withPiles(state, changes), SPIDER_POINTS.move);
   }
   if (move.kind === "flip") {
-    const cards = getPile(state, move.pile).cards;
-    const top = cards.at(-1);
-    return top === undefined
-      ? state
-      : withPiles(state, { [move.pile]: [...cards.slice(0, -1), withFace(top, true)] });
+    return flipTop(state, move.pile);
   }
   if (move.kind === "move") {
     const toFoundation = getPile(state, move.to).kind === "foundation";
@@ -199,8 +193,7 @@ function legalMoves(state: GameState): Move[] {
 /** Exposed cards turn over, and completed runs go up; neither is optional in Spider. */
 function autoMove(state: GameState): Move | undefined {
   for (const pile of pilesOfKind(state, "tableau")) {
-    const top = topCard(pile);
-    if (top !== undefined && !top.faceUp) {
+    if (canFlip(state, pile.id)) {
       return { kind: "flip", pile: pile.id };
     }
     const start = completeRunStart(pile.cards);

@@ -1,7 +1,7 @@
 import type { Card } from "./cards.ts";
-import { colourOf, sameColour, SUITS } from "./cards.ts";
-import type { GameState, Pile } from "./types.ts";
-import { findPile, pilesOfKind, topCard } from "./state.ts";
+import { colourOf, sameColour, SUITS, withFace } from "./cards.ts";
+import type { GameState, Move, Pile } from "./types.ts";
+import { findPile, pilesOfKind, topCard, withPiles } from "./state.ts";
 
 /** Whether `card` can go on `onto` in a build-down, alternating-colour tableau. */
 export function canStackAlternating(card: Card, onto: Card | undefined): boolean {
@@ -78,4 +78,26 @@ export function transfer(
     [from]: source.cards.slice(0, index),
     [to]: [...target.cards, ...source.cards.slice(index)],
   };
+}
+
+/** Whether a tableau pile's top card is face down, waiting to be turned over. */
+export function canFlip(state: GameState, id: string): boolean {
+  const pile = findPile(state, id);
+  const top = pile === undefined ? undefined : topCard(pile);
+  return pile?.kind === "tableau" && top !== undefined && !top.faceUp;
+}
+
+/** Turns a pile's top card face up. */
+export function flipTop(state: GameState, id: string): GameState {
+  const cards = findPile(state, id)?.cards ?? [];
+  const top = cards.at(-1);
+  return top === undefined
+    ? state
+    : withPiles(state, { [id]: [...cards.slice(0, -1), withFace(top, true)] });
+}
+
+/** Turning over the first face-down top card in the tableau, if there is one. */
+export function firstFlip(state: GameState): Move | undefined {
+  const pile = pilesOfKind(state, "tableau").find((candidate) => canFlip(state, candidate.id));
+  return pile === undefined ? undefined : { kind: "flip", pile: pile.id };
 }

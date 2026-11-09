@@ -8,6 +8,9 @@ import {
   isAlternatingRun,
   isSafeForFoundation,
   transfer,
+  canFlip,
+  firstFlip,
+  flipTop,
 } from "../../rules.ts";
 import {
   addScore,
@@ -127,9 +130,7 @@ function canMove(state: GameState, move: Move): boolean {
     return getPile(state, STOCK).cards.length === 0 && getPile(state, WASTE).cards.length > 0;
   }
   if (move.kind === "flip") {
-    const pile = findPile(state, move.pile);
-    const top = pile === undefined ? undefined : topCard(pile);
-    return pile?.kind === "tableau" && top !== undefined && !top.faceUp;
+    return canFlip(state, move.pile);
   }
   if (move.kind === "move") {
     return canMoveCards(state, move.from, move.index, move.to);
@@ -181,13 +182,8 @@ function applyMove(state: GameState, move: Move): GameState {
     return clampScore(addScore(withCounter(restocked, "recycles", recycles + 1), penalty));
   }
   if (move.kind === "flip") {
-    const cards = getPile(state, move.pile).cards;
-    const top = cards.at(-1);
-    if (top === undefined) {
-      return state;
-    }
-    const flipped = withPiles(state, { [move.pile]: [...cards.slice(0, -1), withFace(top, true)] });
-    return addScore(flipped, KLONDIKE_POINTS.turnOver);
+    const flipped = flipTop(state, move.pile);
+    return flipped === state ? state : addScore(flipped, KLONDIKE_POINTS.turnOver);
   }
   if (move.kind === "move") {
     const moved = withPiles(state, transfer(state, move.from, move.index, move.to));
@@ -272,11 +268,9 @@ function legalMoves(state: GameState): Move[] {
 }
 
 function autoMove(state: GameState, options: AutoMoveOptions): Move | undefined {
-  for (const pile of pilesOfKind(state, "tableau")) {
-    const top = topCard(pile);
-    if (top !== undefined && !top.faceUp) {
-      return { kind: "flip", pile: pile.id };
-    }
+  const flip = firstFlip(state);
+  if (flip !== undefined) {
+    return flip;
   }
   if (!options.safeToFoundation) {
     return undefined;
