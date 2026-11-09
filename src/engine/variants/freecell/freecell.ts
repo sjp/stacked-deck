@@ -259,6 +259,31 @@ function stateKey(state: GameState): string {
   return `${cells}/${foundations}/${columns}`;
 }
 
+/**
+ * How far a position looks from a win, for the solver: the cards still to go up, plus
+ * the cards in the way (each card above a lower one in its column, which must move before
+ * that card can go up), plus a little for every free cell in use, less one for every
+ * empty column (which lets longer runs move).
+ */
+function solverEstimate(state: GameState): number {
+  let blocking = 0;
+  let emptyColumns = 0;
+  for (const pile of pilesOfKind(state, "tableau")) {
+    if (pile.cards.length === 0) {
+      emptyColumns += 1;
+    }
+    let lowest = Number.POSITIVE_INFINITY;
+    for (const card of pile.cards) {
+      if (card.rank > lowest) {
+        blocking += 1;
+      }
+      lowest = Math.min(lowest, card.rank);
+    }
+  }
+  const cellsUsed = pilesOfKind(state, "cell").filter((pile) => pile.cards.length > 0).length;
+  return 52 - cardsOnFoundations(state) + 1.5 * blocking + 0.5 * cellsUsed - emptyColumns;
+}
+
 const GAP = 0.1;
 const STEP = 1 + GAP;
 
@@ -327,4 +352,5 @@ export const freecell: Variant = {
     return check.ok ? undefined : check.reason;
   },
   stateKey,
+  solverEstimate,
 };

@@ -46,7 +46,7 @@ describe("solve", () => {
   it.each([
     // Found by searching seeds: deals solved quickly with and without auto-moves.
     [klondike, { draw: 1 }, [1, 3, 4, 5]],
-    [freecell, {}, [8, 21, 26, 36]],
+    [freecell, {}, [4, 21, 26, 36]],
   ])("finds safe auto-moves never lose a winnable deal (%#)", (variant, options, seeds) => {
     const off = { safeToFoundation: false };
     // The node count stops the search; the time limit is only a backstop.
@@ -114,5 +114,21 @@ describe("solve, best-first", () => {
     const start = bestFirstGolf.deal(1, { wrap: true, onKing: true });
     const result = solve(bestFirstGolf, start, { maxNodes: 1_000_000, maxMs: 1 }, { now });
     expect(result).toEqual({ status: "gave-up", nodes: 256 });
+  });
+
+  it("wins FreeCell deals that depth-first search can't within the same node limit", () => {
+    // Found by searching seeds: best-first wins each in a few thousand positions.
+    const seeds = [1, 3, 5, 6, 20];
+    const limits = { maxNodes: 10_000, maxMs: 10_000 };
+    const depthFirstFreecell: Variant = { ...freecell };
+    delete depthFirstFreecell.solverEstimate;
+    expect(freecell).toHaveProperty("solverEstimate");
+    for (const seed of seeds) {
+      const start = freecell.deal(seed, {});
+      const bestFirst = solve(freecell, start, limits);
+      expect(bestFirst.status, `seed ${seed}`).toBe("solved");
+      expect(replaysToWin(freecell, start, solutionOf(bestFirst))).toBe(true);
+      expect(solve(depthFirstFreecell, start, limits).status, `seed ${seed}`).toBe("gave-up");
+    }
   });
 });
