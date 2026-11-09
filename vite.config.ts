@@ -7,12 +7,13 @@ import { configDefaults, defineConfig } from "vitest/config";
  * Content-Security-Policy for the built site. GitHub Pages can't send headers, so it
  * goes in a <meta> tag (which can't express frame-ancestors, report-uri or sandbox).
  * The build has no inline scripts and no data: or blob: subresources.
- * 'unsafe-inline' in style-src covers React's inline style attributes.
+ * Inline styles are allowed only as attributes (React's style props), not <style> tags.
  */
 const CSP = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
+  "style-src-attr 'unsafe-inline'",
   "img-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
