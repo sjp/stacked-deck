@@ -1,45 +1,38 @@
-import { solve } from "../engine/solver.ts";
-import { getVariant } from "../engine/variants/index.ts";
-import type { SolverRequest, SolverResponse } from "./solverProtocol.ts";
+import { respond } from "./solverHandler.ts";
+import type { SolverMessage, SolverRequest } from "./solverProtocol.ts";
 
-/** Runs the solver off the main thread, so finding a deal never freezes the game. */
-function handle(request: SolverRequest): SolverResponse {
-  const variant = getVariant(request.variant);
-  if (request.type === "hint") {
-    const result =
-      variant === undefined
-        ? undefined
-        : solve(
-            variant,
-            request.state,
-            { maxNodes: Number.POSITIVE_INFINITY, maxMs: request.budgetMs },
-            { startAuto: request.auto },
-          );
-    return {
-      type: "hint",
-      id: request.id,
-      move: result?.status === "solved" ? result.moves[0] : undefined,
-    };
+/**
+ * Runs the solver off the main thread, so finding a deal never freezes the game. Requests
+ * are queued and answered one per task, so a cancel message that arrives while one runs is
+ * seen before the next starts and a stale request is skipped.
+ */
+const queue: SolverRequest[] = [];
+const cancelled = new Set<number>();
+let draining = false;
+
+function drain(): void {
+  const request = queue.shift();
+  if (request === undefined) {
+    draining = false;
+    return;
   }
-  if (variant === undefined) {
-    return { type: "deal", id: request.id, seed: undefined };
+  if (cancelled.delete(request.id)) {
+    setTimeout(drain, 0);
+    return;
   }
-  const deadline = Date.now() + request.budgetMs;
-  const values = new Uint32Array(1);
-  while (Date.now() < deadline) {
-    crypto.getRandomValues(values);
-    const seed = values[0] ?? 0;
-    const result = solve(variant, variant.deal(seed, request.options), {
-      maxNodes: Number.POSITIVE_INFINITY,
-      maxMs: Math.min(request.perSeedMs, deadline - Date.now()),
-    });
-    if (result.status === "solved") {
-      return { type: "deal", id: request.id, seed };
-    }
-  }
-  return { type: "deal", id: request.id, seed: undefined };
+  globalThis.postMessage(respond(request), { transfer: [] });
+  setTimeout(drain, 0);
 }
 
-globalThis.addEventListener("message", (event: MessageEvent<SolverRequest>) => {
-  globalThis.postMessage(handle(event.data), { transfer: [] });
+globalThis.addEventListener("message", (event: MessageEvent<SolverMessage>) => {
+  const message = event.data;
+  if (message.type === "cancel") {
+    cancelled.add(message.id);
+    return;
+  }
+  queue.push(message);
+  if (!draining) {
+    draining = true;
+    setTimeout(drain, 0);
+  }
 });

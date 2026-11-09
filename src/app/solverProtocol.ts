@@ -21,6 +21,15 @@ export type SolverRequest =
       readonly budgetMs: number;
     };
 
+/** Tells the worker to skip a request it hasn't started. */
+export interface CancelMessage {
+  readonly type: "cancel";
+  readonly id: number;
+}
+
+export type SolverMessage = SolverRequest | CancelMessage;
+
 export type SolverResponse =
   | { readonly type: "deal"; readonly id: number; readonly seed: number | undefined }
-  | { readonly type: "hint"; readonly id: number; readonly move: Move | undefined };
+  | { readonly type: "hint"; readonly id: number; readonly move: Move | undefined }
+  | { readonly type: "error"; readonly id: number; readonly message: string };
