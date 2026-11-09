@@ -11,6 +11,8 @@ interface PwaState {
   readonly install: (() => void) | undefined;
 }
 
+const UPDATE_CHECK_MS = 60 * 60 * 1000;
+
 let state: PwaState = { update: undefined, install: undefined };
 const listeners = new Set<() => void>();
 
@@ -47,6 +49,24 @@ export async function startPwa(): Promise<void> {
 
   const { registerSW } = await import("virtual:pwa-register");
   const updateSW = registerSW({
+    // An installed app can stay open for days, so look for a new version whenever it
+    // comes back to the foreground, and hourly while it stays open.
+    onRegisteredSW: (_url, registration) => {
+      if (registration === undefined) {
+        return;
+      }
+      const check = () => {
+        registration.update().catch((error: unknown) => {
+          console.warn("Update check failed", error);
+        });
+      };
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          check();
+        }
+      });
+      setInterval(check, UPDATE_CHECK_MS);
+    },
     onNeedRefresh: () => {
       set({
         update: () => {
