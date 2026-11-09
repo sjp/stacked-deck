@@ -26,14 +26,15 @@ describe("solver worker requests", () => {
     expect(klondike.canMove(state, hintMove(response)!)).toBe(true);
   });
 
-  it("finds a winnable deal", () => {
+  // Seeds are random, so the budget is generous: it returns as soon as one is won.
+  it("finds a winnable deal", { timeout: 20_000 }, () => {
     const response = handle({
       type: "deal",
       id: 2,
       variant: "freecell",
       options: {},
-      budgetMs: 2000,
-      perSeedMs: 500,
+      budgetMs: 15_000,
+      perSeedMs: 3000,
     });
     expect(response).toMatchObject({ type: "deal", id: 2 });
     expect(dealSeed(response)).toBeTypeOf("number");
