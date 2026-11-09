@@ -96,6 +96,27 @@ describe("card motion", () => {
     expect(started[0]?.to).toBe(at);
   });
 
+  it("slides the cards a drop leaves behind back from where they were let go", () => {
+    const before = table("10H 9S", "10D");
+    const drag = { pile: "t0", index: 0, targets: new Map() };
+    const { rerender, container } = render(view(before, drag));
+    setMoveMs(container);
+    const [left, moved] = container.querySelectorAll<HTMLElement>('.card-slot[data-pile="t0"]');
+    const at = left!.style.transform;
+    for (const card of [left!, moved!]) {
+      card.style.setProperty("--drag-x", "40px");
+      card.style.setProperty("--drag-y", "25px");
+    }
+    // Only the 9 fits on the other 10.
+    const after = klondike.applyMove(before, { kind: "move", from: "t0", index: 1, to: "t1" });
+    rerender(view(after, undefined));
+    const [x = 0, y = 0] = [...at.matchAll(/-?[\d.]+/gu)].map((match) => Number(match[0]));
+    const back = started.find((entry) => entry.card === left!.dataset["card"]);
+    expect(back?.from).toBe(`translate(${x + 40}px, ${y + 25}px)`);
+    expect(back?.to).toBe(at);
+    expect(started.map((entry) => entry.card)).toContain(moved!.dataset["card"]);
+  });
+
   it("lifts a moving card and drops the lift when a drag interrupts it", () => {
     const before = table("9S", "");
     const { rerender, container } = render(view(before, undefined));

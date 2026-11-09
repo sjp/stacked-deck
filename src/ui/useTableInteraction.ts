@@ -5,7 +5,7 @@ import type {
   RefObject,
 } from "react";
 import { findPile } from "../engine/state.ts";
-import type { GameState, Move, PileId } from "../engine/types.ts";
+import type { GameState, Move, Pile, PileId } from "../engine/types.ts";
 import type { Variant } from "../engine/variant.ts";
 import { emitFeedback } from "./feedback.ts";
 import type { Rect, TableGeometry } from "./geometry.ts";
@@ -64,6 +64,33 @@ export function cardRefFromElement(target: EventTarget | null): CardRef | undefi
   return { pile, index: Number(element.dataset["index"] ?? "-1") };
 }
 
+/**
+ * The move a drag from `from` makes when dropped on `to`. A tableau pile takes the longest
+ * tail of the grabbed cards that it accepts, so a finger that grabs a card or two too deep
+ * still moves the part that fits; the rest go back. Other piles take exactly what was
+ * grabbed: a run dropped on a foundation shouldn't send up just its top card.
+ */
+export function dropMoveOnto(
+  variant: Variant,
+  state: GameState,
+  from: CardRef,
+  to: Pile,
+): Move | undefined {
+  // Pyramid-style pairs target a card rather than a pile, so check the pile's top card.
+  const move = variant.dropMove(state, from.pile, from.index, to.id);
+  if (move !== undefined || to.kind !== "tableau") {
+    return move;
+  }
+  const length = findPile(state, from.pile)?.cards.length ?? 0;
+  for (let index = from.index + 1; index < length; index++) {
+    const shorter = variant.dropMove(state, from.pile, index, to.id);
+    if (shorter !== undefined) {
+      return shorter;
+    }
+  }
+  return undefined;
+}
+
 function legalTargets(
   variant: Variant,
   state: GameState,
@@ -74,8 +101,7 @@ function legalTargets(
     if (pile.id === from.pile && pile.kind !== "tableau") {
       continue;
     }
-    // Pyramid-style pairs target a card rather than a pile, so check the pile's top card.
-    const move = variant.dropMove(state, from.pile, from.index, pile.id);
+    const move = dropMoveOnto(variant, state, from, pile);
     if (move !== undefined) {
       targets.set(pile.id, move);
     }
