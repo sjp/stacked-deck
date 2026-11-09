@@ -1,11 +1,20 @@
+import type { VariantOptions } from "../engine/types.ts";
+import type { Variant } from "../engine/variant.ts";
+import { optionParams } from "./dealLink.ts";
 import { routeHash } from "./route.ts";
 
 export type ShareResult = "shared" | "copied" | "failed";
 
-/** A link that opens this exact deal. */
-export function dealUrl(variant: string, seed: number): string {
+/** A link that opens this exact deal, with the options it was dealt with. */
+export function dealUrl(variant: Variant, seed: number, options: VariantOptions): string {
   const { origin, pathname } = globalThis.location;
-  return `${origin}${pathname}${routeHash({ name: "play", variant, seed })}`;
+  const hash = routeHash({
+    name: "play",
+    variant: variant.id,
+    seed,
+    options: optionParams(variant, options),
+  });
+  return `${origin}${pathname}${hash}`;
 }
 
 /** Shares text (and a link) with the Web Share API, or copies it to the clipboard. */

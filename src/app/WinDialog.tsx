@@ -1,12 +1,14 @@
 import { useState } from "react";
+import type { VariantOptions } from "../engine/types.ts";
+import type { Variant } from "../engine/variant.ts";
 import { Dialog } from "../ui/Dialog.tsx";
 import { formatTime } from "./format.ts";
 import { dealUrl, shareText } from "./share.ts";
 
 export interface WinSummary {
-  readonly variantId: string;
-  readonly variantName: string;
+  readonly variant: Variant;
   readonly seed: number;
+  readonly options: VariantOptions;
   readonly score: number | undefined;
   readonly elapsedMs: number;
   readonly moves: number;
@@ -38,8 +40,8 @@ export function WinDialog({ summary, onNewGame, onClose }: Props) {
   }
   const share = async () => {
     const time = formatTime(summary.elapsedMs);
-    const line = `Stacked Deck — ${summary.variantName} — won in ${time}, ${summary.moves} moves.`;
-    const result = await shareText(line, dealUrl(summary.variantId, summary.seed));
+    const line = `Stacked Deck — ${summary.variant.name} — won in ${time}, ${summary.moves} moves.`;
+    const result = await shareText(line, dealUrl(summary.variant, summary.seed, summary.options));
     setShared(result === "copied" ? "Link copied" : result === "shared" ? "Shared" : undefined);
   };
   return (

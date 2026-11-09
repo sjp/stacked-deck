@@ -174,9 +174,9 @@ export function GameScreen({ variant, seed }: Props) {
           state,
           animate: settings.animation !== "off",
           summary: {
-            variantId: variant.id,
-            variantName: variant.name,
+            variant,
             seed: game.seed,
+            options: game.options,
             score: variant.scored ? state.score : undefined,
             elapsedMs: session.timer.elapsed(),
             moves: session.moves,

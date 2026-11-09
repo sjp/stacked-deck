@@ -10,9 +10,12 @@ describe("routes", () => {
     ["#/play/spider?seed=123", { name: "play", variant: "spider", seed: 123 }],
     ["#/play/spider?seed=-4", { name: "play", variant: "spider" }],
     ["#/play/spider?seed=abc", { name: "play", variant: "spider" }],
-    // Links from older versions: extra parameters and retired pages are ignored.
-    ["#/play/golf?seed=5&daily=2026-11-06", { name: "play", variant: "golf", seed: 5 }],
-    ["#/play/golf?daily=2026-11-06", { name: "play", variant: "golf" }],
+    [
+      "#/play/klondike?seed=5&draw=3",
+      { name: "play", variant: "klondike", seed: 5, options: { draw: "3" } },
+    ],
+    ["#/play/klondike?draw=3", { name: "play", variant: "klondike" }],
+    // Links from older versions: retired pages go home.
     ["#/daily", { name: "home" }],
     ["#/stats", { name: "stats" }],
   ])("parses %s", (hash, route) => {
@@ -20,7 +23,13 @@ describe("routes", () => {
   });
 
   it("round-trips", () => {
-    for (const hash of ["#/", "#/play/klondike", "#/play/golf?seed=9", "#/stats"]) {
+    for (const hash of [
+      "#/",
+      "#/play/klondike",
+      "#/play/golf?seed=9",
+      "#/play/spider?seed=9&suits=4",
+      "#/stats",
+    ]) {
       expect(routeHash(parseRoute(hash))).toBe(hash);
     }
   });
