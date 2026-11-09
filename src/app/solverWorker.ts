@@ -20,20 +20,7 @@ function handle(request: SolverRequest): SolverResponse {
     };
   }
   if (variant === undefined) {
-    return { type: request.type, id: request.id, seed: undefined };
-  }
-  if (request.type === "first") {
-    for (let i = 0; i < request.count; i++) {
-      const seed = (request.start + i) >>> 0;
-      const result = solve(variant, variant.deal(seed, request.options), {
-        maxNodes: request.maxNodes,
-        maxMs: Number.POSITIVE_INFINITY,
-      });
-      if (result.status === "solved") {
-        return { type: "first", id: request.id, seed };
-      }
-    }
-    return { type: "first", id: request.id, seed: undefined };
+    return { type: "deal", id: request.id, seed: undefined };
   }
   const deadline = Date.now() + request.budgetMs;
   const values = new Uint32Array(1);

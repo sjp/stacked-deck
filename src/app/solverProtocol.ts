@@ -11,16 +11,6 @@ export type SolverRequest =
       readonly perSeedMs: number;
     }
   | {
-      /** The first seed from `start` that the solver wins within `maxNodes`, so the answer is the same on every device. */
-      readonly type: "first";
-      readonly id: number;
-      readonly variant: string;
-      readonly options: VariantOptions;
-      readonly start: number;
-      readonly count: number;
-      readonly maxNodes: number;
-    }
-  | {
       readonly type: "hint";
       readonly id: number;
       readonly variant: string;
@@ -29,5 +19,5 @@ export type SolverRequest =
     };
 
 export type SolverResponse =
-  | { readonly type: "deal" | "first"; readonly id: number; readonly seed: number | undefined }
+  | { readonly type: "deal"; readonly id: number; readonly seed: number | undefined }
   | { readonly type: "hint"; readonly id: number; readonly move: Move | undefined };
