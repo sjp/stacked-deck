@@ -85,7 +85,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/engine/testing.ts", "src/engine/winnableSeeds.ts"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/testing.ts", "src/engine/winnableSeeds.ts"],
       reporter: ["text-summary", "text"],
     },
   },
