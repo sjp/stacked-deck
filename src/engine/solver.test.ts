@@ -74,3 +74,45 @@ describe("solve", () => {
     expect(result.status).toBe("gave-up");
   });
 });
+
+/** Golf searched best-first: the fewer cards left in the columns, the closer to a win. */
+const bestFirstGolf: Variant = {
+  ...golf,
+  solverEstimate: (state) =>
+    state.piles
+      .filter((pile) => pile.kind === "tableau")
+      .reduce((sum, pile) => sum + pile.cards.length, 0),
+};
+
+describe("solve, best-first", () => {
+  it("finds a solution that replays to a win", () => {
+    const start = bestFirstGolf.deal(1, { wrap: true, onKing: true });
+    const result = solve(bestFirstGolf, start, LIMITS);
+    expect(result.status).toBe("solved");
+    expect(replaysToWin(bestFirstGolf, start, solutionOf(result))).toBe(true);
+  });
+
+  it("exhausts a dead end", () => {
+    const start = bestFirstGolf.deal(1, { wrap: false, onKing: false });
+    expect(solve(bestFirstGolf, start, LIMITS).status).toBe("exhausted");
+  });
+
+  it("gives up at its node limit", () => {
+    const start = bestFirstGolf.deal(1, { wrap: true, onKing: true });
+    expect(solve(bestFirstGolf, start, { maxNodes: 5, maxMs: 1000 })).toEqual({
+      status: "gave-up",
+      nodes: 6,
+    });
+  });
+
+  it("gives up at its time limit", () => {
+    let time = 0;
+    const now = () => {
+      time += 1000;
+      return time;
+    };
+    const start = bestFirstGolf.deal(1, { wrap: true, onKing: true });
+    const result = solve(bestFirstGolf, start, { maxNodes: 1_000_000, maxMs: 1 }, { now });
+    expect(result).toEqual({ status: "gave-up", nodes: 256 });
+  });
+});

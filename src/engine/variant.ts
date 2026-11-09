@@ -84,4 +84,10 @@ export interface Variant {
 
   /** A key for the solver's seen-positions table. Defaults to the card arrangement. */
   stateKey?(state: GameState): string;
+  /**
+   * Roughly how far a position is from a win, for the solver: lower is closer. With one,
+   * the solver searches best-first, trying every legal move from the most promising
+   * position; without one, it searches depth-first in hint order.
+   */
+  solverEstimate?(state: GameState): number;
 }
