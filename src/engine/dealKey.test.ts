@@ -10,6 +10,10 @@ describe("deal keys", () => {
     expect(dealKey(freecell, {})).toBe("freecell");
   });
 
+  it("counts a missing option as its default", () => {
+    expect(dealKey(klondike, {})).toBe(dealKey(klondike, klondike.defaultOptions));
+  });
+
   it("lists every option combination", () => {
     expect(allOptionSets(klondike)).toEqual([{ draw: 1 }, { draw: 3 }]);
     expect(allOptionSets(golf)).toHaveLength(4);

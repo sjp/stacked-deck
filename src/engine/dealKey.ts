@@ -3,7 +3,10 @@ import type { Variant } from "./variant.ts";
 
 /** Identifies a variant and the options that change its deal, e.g. "klondike:draw=3". */
 export function dealKey(variant: Variant, options: VariantOptions): string {
-  const parts = variant.optionSpecs.map((spec) => `${spec.key}=${String(options[spec.key])}`);
+  // A missing option (say, from settings saved before it existed) counts as its default.
+  const parts = variant.optionSpecs.map(
+    (spec) => `${spec.key}=${String(options[spec.key] ?? variant.defaultOptions[spec.key])}`,
+  );
   return [variant.id, ...parts].join(":");
 }
 
