@@ -73,5 +73,8 @@ export function useGameOutcome(
     [game, gameNumber, hints, key],
   );
 
-  return { end, newBests: newBests?.game === gameNumber ? newBests.bests : [] };
+  /** Whether the current game's outcome has been recorded. */
+  const ended = useCallback(() => recorded.current === gameNumber, [gameNumber]);
+
+  return { end, ended, newBests: newBests?.game === gameNumber ? newBests.bests : [] };
 }

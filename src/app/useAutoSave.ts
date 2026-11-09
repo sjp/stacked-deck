@@ -7,13 +7,24 @@ import type { Timer } from "./useTimer.ts";
 /**
  * Saves the game after every change, and again when the page is hidden or unloaded (iOS
  * doesn't reliably fire beforeunload) or the game screen closes, so time spent thinking
+<<<<<<< Updated upstream
  * since the last move is kept. A won game's save is removed.
+=======
+ * since the last move is kept. A game that is won or whose outcome is already recorded
+ * (`ended`) has its save removed, so it can't be resumed and recorded again. Returns the
+ * save function, for saving straight after a game ends.
+>>>>>>> Stashed changes
  */
-export function useAutoSave(game: Game, hints: number, timer: Timer): void {
+export function useAutoSave(
+  game: Game,
+  hints: number,
+  timer: Timer,
+  ended: () => boolean,
+): () => void {
   const latest = useRef({ game, hints });
   const save = useCallback(() => {
     const current = latest.current;
-    if (current.game.variant.isWon(currentState(current.game))) {
+    if (ended() || current.game.variant.isWon(currentState(current.game))) {
       clearGame(current.game.variant.id);
       return;
     }
@@ -21,7 +32,7 @@ export function useAutoSave(game: Game, hints: number, timer: Timer): void {
       hints: current.hints,
       elapsedMs: Math.round(timer.elapsed()),
     });
-  }, [timer]);
+  }, [ended, timer]);
 
   useEffect(() => {
     latest.current = { game, hints };
@@ -42,4 +53,6 @@ export function useAutoSave(game: Game, hints: number, timer: Timer): void {
       save();
     };
   }, [save]);
+
+  return save;
 }

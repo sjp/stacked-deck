@@ -51,7 +51,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   const [gameNumber, setGameNumber] = useState(0);
   const outcome = useGameOutcome(game, gameNumber, won, timer, hints);
 
-  useAutoSave(game, hints, timer);
+  const save = useAutoSave(game, hints, timer, outcome.ended);
 
   const { end } = outcome;
   const [dealing, setDealing] = useState(false);
@@ -72,6 +72,8 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   const start = useCallback(
     (dealOptions: VariantOptions, dealSeed: number | undefined, ending?: Ending) => {
       end(ending ?? endingFor(variant, state));
+      // Drop the ended game's save now, in case the page closes before the next deal.
+      save();
       dealRequest.current += 1;
       const request = dealRequest.current;
       if (dealSeed !== undefined || !settings.winnableOnly) {
@@ -94,7 +96,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
       };
       void deal();
     },
-    [begin, end, settings.winnableOnly, state, variant],
+    [begin, end, save, settings.winnableOnly, state, variant],
   );
 
   const play = useCallback(
