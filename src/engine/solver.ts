@@ -13,7 +13,12 @@ export interface SolveLimits {
 
 export type SolveResult =
   | { readonly status: "solved"; readonly moves: readonly Move[]; readonly nodes: number }
-  | { readonly status: "unsolvable"; readonly nodes: number }
+  /**
+   * Every position the search tries was visited without a win. The search skips moves
+   * that score zero as hints, so this is a proof only for variants where none of those
+   * could matter (Golf and TriPeaks, for example).
+   */
+  | { readonly status: "exhausted"; readonly nodes: number }
   | { readonly status: "gave-up"; readonly nodes: number };
 
 /** The solver plays with safe auto-moves on, as the game does by default. */
@@ -97,5 +102,5 @@ export function solve(
     path.push(move);
     stack.push({ state: next, moves: orderedMoves(variant, next), next: 0 });
   }
-  return { status: "unsolvable", nodes };
+  return { status: "exhausted", nodes };
 }

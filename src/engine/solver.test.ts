@@ -58,14 +58,14 @@ describe("solve", () => {
       // Each deal is won without auto-moves, so the check below can't pass vacuously.
       expect(without.status).toBe("solved");
       // A deal won without auto-moves is still won with them.
-      expect(withAuto.status).not.toBe("unsolvable");
+      expect(withAuto.status).not.toBe("exhausted");
     }
   });
 
-  it("proves a dead end unsolvable", () => {
+  it("exhausts a dead end", () => {
     // Found by searching seeds: classic Golf deal 1 can't be won.
     expect(solve(golf, golf.deal(1, { wrap: false, onKing: false }), LIMITS).status).toBe(
-      "unsolvable",
+      "exhausted",
     );
   });
 
