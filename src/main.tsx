@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./app/App.tsx";
 import { startPwa } from "./app/pwa.ts";
 import { removeRetiredData } from "./app/retiredData.ts";
+import { applyPageSettings, loadSettings } from "./app/settingsStore.ts";
 import "./styles/theme.css";
 import "./styles/index.css";
 import "./styles/cards.css";
@@ -14,6 +15,8 @@ if (root === null) {
   throw new Error("Missing #root element");
 }
 removeRetiredData();
+// Before the first render, so a forced theme never flashes the system one.
+applyPageSettings(loadSettings());
 createRoot(root).render(
   <StrictMode>
     <App />
