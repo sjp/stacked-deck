@@ -101,3 +101,13 @@ export function firstFlip(state: GameState): Move | undefined {
   const pile = pilesOfKind(state, "tableau").find((candidate) => canFlip(state, candidate.id));
   return pile === undefined ? undefined : { kind: "flip", pile: pile.id };
 }
+
+/**
+ * The columns worth trying as a destination: every one with cards, plus the first empty
+ * one (empty columns are interchangeable). Moving a whole column tries no empty one, since
+ * that would only move it from one empty column to another.
+ */
+export function targetColumns(columns: readonly Pile[], wholeColumn: boolean): Pile[] {
+  const firstEmpty = wholeColumn ? undefined : columns.find((column) => column.cards.length === 0);
+  return columns.filter((column) => column.cards.length > 0 || column === firstEmpty);
+}

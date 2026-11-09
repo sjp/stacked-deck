@@ -11,6 +11,7 @@ import {
   canFlip,
   firstFlip,
   flipTop,
+  targetColumns,
 } from "../../rules.ts";
 import {
   addScore,
@@ -245,15 +246,7 @@ function legalMoves(state: GameState): Move[] {
     }
   }
   for (const { pile, index } of sources) {
-    let triedEmpty = false;
-    for (const target of tableau) {
-      if (target.cards.length === 0) {
-        // Every empty column is equivalent, and moving a whole column to one is pointless.
-        if (triedEmpty || (pile.kind === "tableau" && index === 0)) {
-          continue;
-        }
-        triedEmpty = true;
-      }
+    for (const target of targetColumns(tableau, pile.kind === "tableau" && index === 0)) {
       if (canMoveCards(state, pile.id, index, target.id)) {
         moves.push({ kind: "move", from: pile.id, index, to: target.id });
       }

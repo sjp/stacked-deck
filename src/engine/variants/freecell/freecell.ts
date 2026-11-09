@@ -6,9 +6,10 @@ import {
   cardsOnFoundations,
   isAlternatingRun,
   isSafeForFoundation,
+  targetColumns,
   transfer,
 } from "../../rules.ts";
-import { findPile, makePile, pilesOfKind, topCard, withPiles } from "../../state.ts";
+import { findPile, getPile, makePile, pilesOfKind, topCard, withPiles } from "../../state.ts";
 import type { GameState, Move, Pile, PileId, VariantOptions } from "../../types.ts";
 import type {
   AutoMoveOptions,
@@ -135,17 +136,9 @@ function legalMoves(state: GameState): Move[] {
         targets.push(foundation);
       }
     }
-    let triedEmpty = false;
-    for (const id of TABLEAU) {
-      const column = findPile(state, id);
-      if (column?.cards.length === 0) {
-        // Empty columns are interchangeable; moving a whole column into one is pointless.
-        if (triedEmpty || (pile.kind === "tableau" && index === 0)) {
-          continue;
-        }
-        triedEmpty = true;
-      }
-      targets.push(id);
+    const columns = TABLEAU.map((id) => getPile(state, id));
+    for (const column of targetColumns(columns, pile.kind === "tableau" && index === 0)) {
+      targets.push(column.id);
     }
     if (single && pile.kind === "tableau") {
       const cell = CELLS.find((id) => findPile(state, id)?.cards.length === 0);

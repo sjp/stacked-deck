@@ -1,7 +1,7 @@
 import type { Card, Suit } from "../../cards.ts";
 import { withFace } from "../../cards.ts";
 import { shuffledDeck } from "../../rng.ts";
-import { canFlip, flipTop, transfer } from "../../rules.ts";
+import { canFlip, flipTop, targetColumns, transfer } from "../../rules.ts";
 import {
   addScore,
   findPile,
@@ -150,14 +150,7 @@ function applyMove(state: GameState, move: Move): GameState {
 /** Moves of `cards[index..]` onto other columns, trying only one of the empty ones. */
 function tableauMoves(state: GameState, from: PileId, index: number): Move[] {
   const moves: Move[] = [];
-  let triedEmpty = false;
-  for (const target of pilesOfKind(state, "tableau")) {
-    if (target.cards.length === 0) {
-      if (triedEmpty || index === 0) {
-        continue;
-      }
-      triedEmpty = true;
-    }
+  for (const target of targetColumns(pilesOfKind(state, "tableau"), index === 0)) {
     if (canMoveCards(state, from, index, target.id)) {
       moves.push({ kind: "move", from, index, to: target.id });
     }

@@ -4,6 +4,7 @@ import {
   canStackAlternating,
   isAlternatingRun,
   isSafeForFoundation,
+  targetColumns,
   transfer,
 } from "./rules.ts";
 import { card, cards, makeState } from "./testing.ts";
@@ -65,5 +66,22 @@ describe("transfer", () => {
   it("changes nothing for an unknown pile", () => {
     const state = makeState("klondike", [{ id: "t0", kind: "tableau", cards: "KS" }]);
     expect(transfer(state, "t0", 0, "nowhere")).toEqual({});
+  });
+});
+
+describe("targetColumns", () => {
+  const columns = makeState("klondike", [
+    { id: "t0", kind: "tableau", cards: "KS" },
+    { id: "t1", kind: "tableau" },
+    { id: "t2", kind: "tableau", cards: "QH" },
+    { id: "t3", kind: "tableau" },
+  ]).piles;
+
+  it("tries every column with cards and only the first empty one", () => {
+    expect(targetColumns(columns, false).map((pile) => pile.id)).toEqual(["t0", "t1", "t2"]);
+  });
+
+  it("tries no empty column for a whole column", () => {
+    expect(targetColumns(columns, true).map((pile) => pile.id)).toEqual(["t0", "t2"]);
   });
 });
