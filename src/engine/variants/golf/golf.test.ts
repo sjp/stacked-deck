@@ -81,3 +81,11 @@ describe("legal moves", () => {
     expect(allOfferedMovesLegal(golf, states)).toBe(true);
   });
 });
+
+describe("move checks", () => {
+  it("only play a column's top card", () => {
+    const state = table(["9C 4H 6D"], "5S");
+    expect(golf.canMove(state, { kind: "move", from: "t0", index: 2, to: "waste" })).toBe(true);
+    expect(golf.canMove(state, { kind: "move", from: "t0", index: 0, to: "waste" })).toBe(false);
+  });
+});

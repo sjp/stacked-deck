@@ -114,3 +114,15 @@ describe("legal moves", () => {
     expect(allOfferedMovesLegal(tripeaks, states)).toBe(true);
   });
 });
+
+describe("move checks", () => {
+  it("name the single card in a slot", () => {
+    const state = table({ 27: "6D" }, "5S");
+    expect(tripeaks.canMove(state, { kind: "move", from: "p27", index: 0, to: "waste" })).toBe(
+      true,
+    );
+    expect(tripeaks.canMove(state, { kind: "move", from: "p27", index: 1, to: "waste" })).toBe(
+      false,
+    );
+  });
+});

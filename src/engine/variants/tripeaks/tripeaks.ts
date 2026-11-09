@@ -113,7 +113,13 @@ function canMove(state: GameState, move: Move): boolean {
     const card = pile === undefined ? undefined : topCard(pile);
     return index !== undefined && card !== undefined && !card.faceUp && isUncovered(state, index);
   }
-  return move.kind === "move" && move.to === WASTE && canPlay(state, move.from);
+  // Each tableau slot holds one card, so the move must name it.
+  return (
+    move.kind === "move" &&
+    move.to === WASTE &&
+    move.index === (findPile(state, move.from)?.cards.length ?? 0) - 1 &&
+    canPlay(state, move.from)
+  );
 }
 
 function peaksCleared(state: GameState): number {

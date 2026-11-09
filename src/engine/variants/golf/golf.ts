@@ -66,7 +66,13 @@ function canMove(state: GameState, move: Move): boolean {
   if (move.kind === "draw") {
     return getPile(state, STOCK).cards.length > 0;
   }
-  return move.kind === "move" && move.to === WASTE && canPlay(state, move.from);
+  // Only a column's top card plays.
+  return (
+    move.kind === "move" &&
+    move.to === WASTE &&
+    move.index === (findPile(state, move.from)?.cards.length ?? 0) - 1 &&
+    canPlay(state, move.from)
+  );
 }
 
 function applyMove(state: GameState, move: Move): GameState {
