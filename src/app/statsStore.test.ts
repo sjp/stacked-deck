@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { recordAbandon, recordWin } from "./stats.ts";
 import { loadStats, updateRecord } from "./statsStore.ts";
-import { memoryStore } from "./storage.ts";
+import { memoryStore, writeStored } from "./storage.ts";
 
 const WIN = {
   elapsedMs: 1000,
@@ -26,5 +26,17 @@ describe("stats store", () => {
     expect(loadStats(store)["golf"]?.streak).toBe(2);
     updateRecord("golf", recordAbandon, store);
     expect(loadStats(store)["golf"]).toMatchObject({ played: 2, won: 2, streak: 0 });
+  });
+
+  it("builds a streak within a visit even without localStorage", () => {
+    expect(globalThis.localStorage).toBeUndefined();
+    updateRecord("golf", (record) => recordWin(record, WIN).record);
+    expect(updateRecord("golf", (record) => recordWin(record, WIN).record).streak).toBe(2);
+  });
+
+  it("ignores malformed records", () => {
+    const store = memoryStore();
+    writeStored("stats", { golf: { played: "lots" }, klondike: 3 }, store);
+    expect(loadStats(store)).toEqual({});
   });
 });
