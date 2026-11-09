@@ -59,7 +59,10 @@ export function StatsScreen() {
       {rows.length === 0 ? (
         <p className="empty">No games finished yet.</p>
       ) : (
-        <div className="table-scroll">
+        // Focusable so keyboard users can scroll it sideways on narrow screens (a scrolling
+        // region needs to be, though the lint rule doesn't know that).
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        <section className="table-scroll" tabIndex={0} aria-label="Statistics by game">
           <table className="stats-table">
             <thead>
               <tr>
@@ -81,7 +84,7 @@ export function StatsScreen() {
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
       <p className="note">
         Games left unfinished aren&apos;t counted, but they end the current streak.
