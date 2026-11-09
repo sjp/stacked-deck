@@ -79,5 +79,14 @@ export default defineConfig({
     }),
   ],
   // Agent worktrees live under .claude/; keep their copies of the tests out of the run.
-  test: { exclude: [...configDefaults.exclude, "**/.claude/**"] },
+  test: {
+    exclude: [...configDefaults.exclude, "**/.claude/**"],
+    // Tests run in node; files that need a DOM opt in with `@vitest-environment happy-dom`.
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/engine/testing.ts", "src/engine/winnableSeeds.ts"],
+      reporter: ["text-summary", "text"],
+    },
+  },
 });
