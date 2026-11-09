@@ -1,6 +1,6 @@
 import type { Card } from "./cards.ts";
-import { colourOf, sameColour } from "./cards.ts";
-import type { GameState, Move, Pile, PileKind } from "./types.ts";
+import { colourOf, sameColour, SUITS } from "./cards.ts";
+import type { GameState, Pile } from "./types.ts";
 import { findPile, pilesOfKind, topCard } from "./state.ts";
 
 /** Whether `card` can go on `onto` in a build-down, alternating-colour tableau. */
@@ -54,23 +54,12 @@ export function isSafeForFoundation(state: GameState, card: Card): boolean {
     return true;
   }
   const colour = colourOf(card.suit);
-  const opposite = (["spades", "hearts", "diamonds", "clubs"] as const).filter(
-    (suit) => colourOf(suit) !== colour,
-  );
+  const opposite = SUITS.filter((suit) => colourOf(suit) !== colour);
   return opposite.every((suit) => foundationRank(state, suit) >= card.rank - 1);
 }
 
 export function cardsOnFoundations(state: GameState): number {
   return pilesOfKind(state, "foundation").reduce((sum, pile) => sum + pile.cards.length, 0);
-}
-
-export function pileKindOf(state: GameState, id: string): PileKind | undefined {
-  return findPile(state, id)?.kind;
-}
-
-/** The destination pile of a move, if it has one. */
-export function moveTarget(move: Move): string | undefined {
-  return move.kind === "move" ? move.to : undefined;
 }
 
 /** Moves cards[index..] from one pile to another, returning the changed card lists. */

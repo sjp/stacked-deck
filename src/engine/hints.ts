@@ -119,10 +119,7 @@ export function rankHints(variant: Variant, state: GameState): Move[] {
     .map(({ move }) => move);
 }
 
-/**
- * Whether anything useful can still be done: a useful move now, or one reachable by going
- * through the stock. False means only stock cycling is left.
- */
+/** Whether a useful move (not a stock move) can be made right now. */
 function usefulNow(variant: Variant, state: GameState): boolean {
   return variant
     .legalMoves(state)

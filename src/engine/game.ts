@@ -70,7 +70,3 @@ export function nextFoundationMove(variant: Variant, state: GameState): Move | u
   );
   return variant.legalMoves(state).find((move) => move.kind === "move" && foundations.has(move.to));
 }
-
-export function sameMove(a: Move, b: Move): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}

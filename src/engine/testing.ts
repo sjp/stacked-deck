@@ -1,5 +1,5 @@
 import type { Card, Rank, Suit } from "./cards.ts";
-import { isRank } from "./cards.ts";
+import { isRank, rankLabel } from "./cards.ts";
 import type { GameState, Pile, PileKind, VariantOptions } from "./types.ts";
 import type { Variant } from "./variant.ts";
 
@@ -72,12 +72,8 @@ export function makeState(
 
 /** Lists a pile as shorthand, for readable assertions. */
 export function codes(pile: Pile | undefined): string {
-  const letters: Readonly<Record<number, string>> = { 1: "A", 11: "J", 12: "Q", 13: "K" };
   return (pile?.cards ?? [])
-    .map(
-      (c) =>
-        `${c.faceUp ? "" : "-"}${letters[c.rank] ?? String(c.rank)}${c.suit[0]?.toUpperCase() ?? ""}`,
-    )
+    .map((c) => `${c.faceUp ? "" : "-"}${rankLabel(c.rank)}${c.suit[0]?.toUpperCase() ?? ""}`)
     .join(" ");
 }
 
