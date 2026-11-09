@@ -19,6 +19,18 @@ export type SolveResult =
 /** The solver plays with safe auto-moves on, as the game does by default. */
 export const SOLVER_AUTO: AutoMoveOptions = { safeToFoundation: true };
 
+export interface SolveOptions {
+  /** Automatic moves after each move in the search. */
+  readonly auto?: AutoMoveOptions;
+  /**
+   * Automatic moves applied to the start position before searching (defaults to `auto`).
+   * A hint passes the player's own, so its first move is legal in the position on screen
+   * even when the search itself uses safe auto-moves.
+   */
+  readonly startAuto?: AutoMoveOptions;
+  readonly now?: () => number;
+}
+
 interface Frame {
   readonly state: GameState;
   readonly moves: readonly Move[];
@@ -44,12 +56,11 @@ export function solve(
   variant: Variant,
   start: GameState,
   limits: SolveLimits,
-  auto: AutoMoveOptions = SOLVER_AUTO,
-  now: () => number = () => Date.now(),
+  { auto = SOLVER_AUTO, startAuto = auto, now = () => Date.now() }: SolveOptions = {},
 ): SolveResult {
   const deadline = now() + limits.maxMs;
   const key = (state: GameState) => variant.stateKey?.(state) ?? pilesKey(state);
-  const first = settle(variant, start, auto).state;
+  const first = settle(variant, start, startAuto).state;
   const seen = new Set<string>([key(first)]);
   const path: Move[] = [];
   const stack: Frame[] = [{ state: first, moves: orderedMoves(variant, first), next: 0 }];
