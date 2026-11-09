@@ -54,6 +54,8 @@ export function makeState(
   options: VariantOptions = {},
   counters: Readonly<Record<string, number>> = {},
 ): GameState {
+  // Fresh ids for every table, so a test's card ids don't depend on the tests before it.
+  nextId = 1000;
   return {
     variant,
     seed: 0,
