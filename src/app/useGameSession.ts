@@ -55,7 +55,10 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
   );
   const canFinish = !won && variant.canFinish?.(state) === true;
   const [finishRequested, setFinishRequested] = useState(false);
-  const finishing = canFinish && (settings.autoFinish || finishRequested);
+  // After an undo, finishing automatically would just replay what was undone (and win
+  // again), so it waits for the player's next move or the Finish button.
+  const [heldByUndo, setHeldByUndo] = useState(false);
+  const finishing = canFinish && (finishRequested || (settings.autoFinish && !heldByUndo));
   useAutoFinish(variant, state, finishing, settings.animation, auto, dispatch);
 
   const [gameNumber, setGameNumber] = useState(0);
@@ -79,6 +82,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       timer.reset();
       setHints(0);
       setFinishRequested(false);
+      setHeldByUndo(false);
       replace(newGame(variant, dealSeed, dealOptions, auto));
     },
     [auto, replace, timer, variant],
@@ -122,6 +126,7 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
       if (won || dealing || !variant.canMove(state, move)) {
         return false;
       }
+      setHeldByUndo(false);
       dispatch({ type: "play", move, auto });
       return true;
     },
@@ -163,6 +168,8 @@ export function useGameSession({ variant, link, settings, paused }: Options) {
         setPendingLink(undefined);
       },
       undo: () => {
+        setFinishRequested(false);
+        setHeldByUndo(true);
         dispatch({ type: "undo" });
       },
       redo: () => {
