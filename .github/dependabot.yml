@@ -4,11 +4,23 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Let new releases settle for a few days before proposing them.
+    cooldown:
+      default-days: 5
+    # Minor and patch updates together; each major update on its own, so one breaking
+    # release doesn't hold the rest back.
     groups:
-      npm:
-        patterns:
-          - "*"
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 5
+    groups:
+      actions:
+        patterns:
+          - "*"
