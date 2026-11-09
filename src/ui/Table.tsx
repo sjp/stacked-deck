@@ -31,6 +31,7 @@ interface Point {
 interface Track {
   /** Where the card was placed last render. */
   readonly at: Point;
+  readonly pile: PileId;
   readonly dragging: boolean;
   /** The slide in progress, if any. */
   readonly motion?: {
@@ -115,10 +116,11 @@ function useCardMotion(
       const element = elements.get(id);
       const track = tracks.current.get(id);
       const at = { x: placement.x, y: placement.y };
-      const dragging = inRun(drag, placement.pile, placement.index);
+      const { pile } = placement;
+      const dragging = inRun(drag, pile, placement.index);
       if (element === undefined || track === undefined || dragging) {
         stopMotion(element, track);
-        next.set(id, { at, dragging });
+        next.set(id, { at, pile, dragging });
         continue;
       }
       const from = track.dragging
@@ -126,13 +128,17 @@ function useCardMotion(
         : currentPosition(track, now);
       if ((from.x === at.x && from.y === at.y) || ms === 0) {
         stopMotion(element, track);
-        next.set(id, { at, dragging });
+        next.set(id, { at, pile, dragging });
         continue;
       }
       track.motion?.animation.cancel();
-      // Lifted above resting cards while it slides. An attribute, not a class, so a
-      // re-render that changes the class list doesn't drop it.
-      element.dataset["moving"] = "";
+      // Lifted above resting cards while it slides to another pile or back from a drag. An
+      // attribute, not a class, so a re-render that changes the class list doesn't drop it.
+      // A card that only shifts within its pile, as a column's spacing changes, stays in
+      // place in the stacking order, under any card crossing the table above it.
+      if (track.dragging || track.pile !== pile) {
+        element.dataset["moving"] = "";
+      }
       const animation = element.animate(
         [{ transform: translate(from) }, { transform: translate(at) }],
         {
@@ -143,7 +149,7 @@ function useCardMotion(
       animation.addEventListener("finish", () => {
         delete element.dataset["moving"];
       });
-      next.set(id, { at, dragging, motion: { from, start: now, ms, animation } });
+      next.set(id, { at, pile, dragging, motion: { from, start: now, ms, animation } });
     }
     tracks.current = next;
   }, [tableRef, geometry, drag]);

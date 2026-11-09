@@ -131,4 +131,21 @@ describe("card motion", () => {
     rerender(view(withCard, { pile: "t1", index: 0, targets: new Map() }));
     expect(card.dataset["moving"]).toBeUndefined();
   });
+
+  it("lifts only a card changing pile when a column's spacing shifts too", () => {
+    const before = table("8C", "KH QS JH 10S 9H 8S 7H");
+    const { rerender, container } = render(view(before, undefined));
+    setMoveMs(container);
+    const cards = [...container.querySelectorAll<HTMLElement>('.card-slot[data-pile="t1"]')];
+    const moved = cards.at(-1)!;
+    // One card fewer in the longest column leaves room to spread the rest.
+    const after = klondike.applyMove(before, { kind: "move", from: "t1", index: 6, to: "t0" });
+    rerender(view(after, undefined));
+    const shifted = cards.slice(1, -1);
+    expect(started.map((entry) => entry.card)).toEqual(
+      expect.arrayContaining([...shifted, moved].map((card) => card.dataset["card"])),
+    );
+    expect(moved.dataset["moving"]).toBe("");
+    expect(shifted.every((card) => card.dataset["moving"] === undefined)).toBe(true);
+  });
 });
