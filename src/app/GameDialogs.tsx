@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ComponentProps } from "react";
 import type { GameState } from "../engine/types.ts";
 import { Dialog } from "../ui/Dialog.tsx";
@@ -38,12 +39,14 @@ interface Props {
 /** The game screen's overlays: settings, the win celebration and the stuck prompt. */
 export function GameDialogs({ settings, win, help, noMoves, link }: Props) {
   const celebration = useWinCelebration(win.won, win.state, win.animate);
+  // A new list on every render would restart the animation.
+  const celebrated = useMemo(() => cardsForCelebration(win.state), [win.state]);
   return (
     <>
       <SettingsDialog {...settings} />
       {celebration.phase === "animating" ? (
         <WinAnimation
-          cards={cardsForCelebration(win.state)}
+          cards={celebrated}
           onDone={() => {
             celebration.setPhase("dialog");
           }}

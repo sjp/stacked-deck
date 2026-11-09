@@ -90,12 +90,19 @@ export function WinAnimation({ cards, onDone }: Props) {
       finish();
       return undefined;
     }
-    const scale = globalThis.devicePixelRatio;
-    const width = globalThis.innerWidth;
-    const height = globalThis.innerHeight;
-    canvas.width = Math.ceil(width * scale);
-    canvas.height = Math.ceil(height * scale);
-    context.scale(scale, scale);
+    let width = 0;
+    let height = 0;
+    const fit = () => {
+      const scale = globalThis.devicePixelRatio;
+      width = globalThis.innerWidth;
+      height = globalThis.innerHeight;
+      canvas.width = Math.ceil(width * scale);
+      canvas.height = Math.ceil(height * scale);
+      context.setTransform(scale, 0, 0, scale, 0, 0);
+    };
+    fit();
+    // Rotating a phone resizes the window; keep the canvas matching it.
+    globalThis.addEventListener("resize", fit);
 
     const foundations = document.querySelectorAll('.pile-base[data-kind="foundation"]');
     const origins = [
@@ -187,6 +194,7 @@ export function WinAnimation({ cards, onDone }: Props) {
     document.addEventListener("visibilitychange", onHidden);
     return () => {
       cancelAnimationFrame(frame);
+      globalThis.removeEventListener("resize", fit);
       document.removeEventListener("visibilitychange", onHidden);
     };
   }, [cards]);
