@@ -8,7 +8,15 @@ import { useAutoFinish } from "./useAutoFinish.ts";
 import { useAutoSave } from "./useAutoSave.ts";
 import type { Ending } from "./useGameOutcome.ts";
 import { useGameOutcome } from "./useGameOutcome.ts";
-import { currentState, moveCount, newGame, redoable, undoable, useGame } from "./useGame.ts";
+import {
+  currentState,
+  hasStarted,
+  moveCount,
+  newGame,
+  redoable,
+  undoable,
+  useGame,
+} from "./useGame.ts";
 import { useGameClock } from "./useTimer.ts";
 
 interface Options {
@@ -32,7 +40,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
   const [hints, setHints] = useState(initial.hints);
   const state = currentState(game);
   const won = variant.isWon(state);
-  const started = moveCount(game) > 0;
+  const started = hasStarted(game);
   // The timer runs from the first move until the win, while the page is visible.
   const timer = useGameClock(initial.elapsedMs, started && !won && !paused);
   const canFinish = !won && variant.canFinish?.(state) === true;

@@ -3,7 +3,7 @@ import { mulberry32 } from "../engine/rng.ts";
 import type { Move } from "../engine/types.ts";
 import { klondike } from "../engine/variants/klondike/klondike.ts";
 import type { Game } from "./useGame.ts";
-import { currentState, gameReducer, newGame, redoable, undoable } from "./useGame.ts";
+import { currentState, gameReducer, hasStarted, newGame, redoable, undoable } from "./useGame.ts";
 
 const AUTO = { safeToFoundation: true };
 
@@ -60,5 +60,18 @@ describe("undo and redo", () => {
     game = gameReducer(game, { type: "play", move: flipping!, auto: AUTO });
     expect(game.history.present.moves.length).toBeGreaterThan(1);
     expect(currentState(gameReducer(game, { type: "undo" }))).toBe(before);
+  });
+});
+
+describe("hasStarted", () => {
+  it("stays true after undoing back to the deal", () => {
+    const start = newGame(klondike, 3, { draw: 1 }, AUTO);
+    expect(hasStarted(start)).toBe(false);
+    const move = klondike.legalMoves(currentState(start))[0]!;
+    const played = gameReducer(start, { type: "play", move, auto: AUTO });
+    expect(hasStarted(played)).toBe(true);
+    const undone = gameReducer(played, { type: "undo" });
+    expect(undone.history.past).toHaveLength(0);
+    expect(hasStarted(undone)).toBe(true);
   });
 });

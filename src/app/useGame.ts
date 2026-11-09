@@ -51,6 +51,14 @@ export function moveCount(game: Game): number {
   return game.history.past.length;
 }
 
+/**
+ * Whether the player has done anything in this game. Undone moves count, so undoing back to
+ * the deal doesn't turn a game in progress back into an untouched one.
+ */
+export function hasStarted(game: Game): boolean {
+  return game.history.past.length > 0 || game.history.future.length > 0 || game.undos > 0;
+}
+
 export type GameAction =
   | { readonly type: "play"; readonly move: Move; readonly auto: AutoMoveOptions }
   | { readonly type: "undo" }

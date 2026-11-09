@@ -3,7 +3,7 @@ import { emitFeedback } from "./feedback.ts";
 import { recordAbandon, recordLoss, recordWin, statsKey } from "./stats.ts";
 import { updateRecord } from "./statsStore.ts";
 import type { Game } from "./useGame.ts";
-import { currentState, moveCount } from "./useGame.ts";
+import { currentState, hasStarted, moveCount } from "./useGame.ts";
 import type { Timer } from "./useTimer.ts";
 
 export type Ending = "abandon" | "loss";
@@ -49,7 +49,7 @@ export function useGameOutcome(
   /** Call before dealing again: counts the current game as lost or abandoned. */
   const end = useCallback(
     (ending: Ending) => {
-      if (recorded.current === gameNumber || moveCount(game) === 0) {
+      if (recorded.current === gameNumber || !hasStarted(game)) {
         return;
       }
       recorded.current = gameNumber;
