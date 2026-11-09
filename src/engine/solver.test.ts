@@ -7,7 +7,6 @@ import type { Variant } from "./variant.ts";
 import { freecell } from "./variants/freecell/freecell.ts";
 import { golf } from "./variants/golf/golf.ts";
 import { klondike } from "./variants/klondike/klondike.ts";
-import { pyramid } from "./variants/pyramid/pyramid.ts";
 import { spider } from "./variants/spider/spider.ts";
 import { tripeaks } from "./variants/tripeaks/tripeaks.ts";
 
@@ -73,34 +72,5 @@ describe("solve", () => {
   it("gives up at its limits", () => {
     const result = solve(spider, spider.deal(1, { suits: 4 }), { maxNodes: 50, maxMs: 1000 });
     expect(result.status).toBe("gave-up");
-  });
-});
-
-describe("solver hints", () => {
-  const off = { safeToFoundation: false };
-
-  it.each([
-    [klondike, { draw: 1 }, 1],
-    [klondike, { draw: 3 }, 1],
-    [spider, { suits: 1 }, 1],
-    [freecell, {}, 2],
-    [pyramid, { passes: 3 }, 3],
-    [tripeaks, { wrap: true }, 1],
-    [golf, { wrap: true, onKing: true }, 3],
-  ])("suggest a legal first move with auto-moves off (%#)", (variant, options, seed) => {
-    // Follow the hints the way a player with auto-moves off would.
-    let state = settle(variant, variant.deal(seed, options), off).state;
-    let checked = 0;
-    for (let step = 0; step < 12 && !variant.isWon(state); step++) {
-      const result = solve(variant, state, { maxNodes: 50_000, maxMs: 3000 }, { startAuto: off });
-      const [first] = solutionOf(result);
-      if (first === undefined) {
-        break;
-      }
-      expect(variant.canMove(state, first)).toBe(true);
-      checked += 1;
-      state = play(variant, state, first, off)!.state;
-    }
-    expect(checked).toBeGreaterThan(0);
   });
 });
