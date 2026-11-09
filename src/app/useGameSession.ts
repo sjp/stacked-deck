@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Move, VariantOptions } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
+import type { DealLink } from "./deals.ts";
 import { findWinnableSeed, loadGame } from "./deals.ts";
 import type { Settings } from "./settings.ts";
 import { optionsFor } from "./settings.ts";
@@ -19,32 +20,39 @@ import {
 } from "./useGame.ts";
 import { useGameClock } from "./useTimer.ts";
 
+export type { DealLink } from "./deals.ts";
 export type { Ending } from "./useGameOutcome.ts";
 
 interface Options {
   readonly variant: Variant;
-  readonly seed: number | undefined;
+  /** A deal link to open. */
+  readonly link: DealLink | undefined;
   readonly settings: Settings;
   /** Pause the timer (a dialog is open). */
   readonly paused: boolean;
 }
 
 /** A game together with its timer, hint count and saving. */
-export function useGameSession({ variant, seed, settings, paused }: Options) {
+export function useGameSession({ variant, link, settings, paused }: Options) {
   const auto: AutoMoveOptions = useMemo(
     () => ({ safeToFoundation: settings.autoFoundation }),
     [settings.autoFoundation],
   );
   const [initial] = useState(() =>
-    loadGame(variant, seed, optionsFor(settings, variant), auto, settings.winnableOnly),
+    loadGame(variant, link, optionsFor(settings, variant), auto, settings.winnableOnly),
   );
+  const [pendingLink, setPendingLink] = useState(initial.pendingLink);
   const { game, dispatch, replace } = useGame(() => initial.game);
   const [hints, setHints] = useState(initial.hints);
   const state = currentState(game);
   const won = variant.isWon(state);
   const started = hasStarted(game);
-  // The timer runs from the first move until the win, while the page is visible.
-  const timer = useGameClock(initial.elapsedMs, started && !won && !paused);
+  // The timer runs from the first move until the win, while the page is visible and no
+  // question is waiting.
+  const timer = useGameClock(
+    initial.elapsedMs,
+    started && !won && !paused && pendingLink === undefined,
+  );
   const canFinish = !won && variant.canFinish?.(state) === true;
   const [finishRequested, setFinishRequested] = useState(false);
   const finishing = canFinish && (settings.autoFinish || finishRequested);
@@ -131,6 +139,19 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
       newBests: outcome.newBests,
       play,
       start,
+      /** True while a deal link waits to replace the game in progress. */
+      linkPending: pendingLink !== undefined,
+      /** Ends the game in progress and deals the waiting link. */
+      openLink: () => {
+        if (pendingLink !== undefined) {
+          setPendingLink(undefined);
+          start(pendingLink.options, pendingLink.seed);
+        }
+      },
+      /** Keeps the game in progress and drops the waiting link. */
+      dropLink: () => {
+        setPendingLink(undefined);
+      },
       undo: () => {
         dispatch({ type: "undo" });
       },
@@ -149,6 +170,7 @@ export function useGameSession({ variant, seed, settings, paused }: Options) {
       game,
       hints,
       outcome.newBests,
+      pendingLink,
       play,
       start,
       state,

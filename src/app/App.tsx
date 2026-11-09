@@ -6,7 +6,7 @@ import { SettingsProvider } from "./SettingsProvider.tsx";
 import { StatsScreen } from "./StatsScreen.tsx";
 import { variantsInProgress } from "./gameStore.ts";
 import { UpdateToast } from "./UpdateToast.tsx";
-import { useRoute } from "./useRoute.ts";
+import { useDealLink, useRoute } from "./useRoute.ts";
 
 const CardGallery = import.meta.env.DEV
   ? lazy(async () => {
@@ -17,6 +17,7 @@ const CardGallery = import.meta.env.DEV
 
 function Screen() {
   const route = useRoute();
+  const link = useDealLink(route);
   if (route.name === "gallery" && CardGallery !== undefined) {
     return (
       <Suspense>
@@ -27,7 +28,13 @@ function Screen() {
   if (route.name === "play") {
     const variant = getVariant(route.variant);
     if (variant !== undefined) {
-      return <GameScreen key={variant.id} variant={variant} seed={route.seed} />;
+      return (
+        <GameScreen
+          key={`${variant.id}:${link?.id ?? 0}`}
+          variant={variant}
+          link={link?.variant === variant.id ? link : undefined}
+        />
+      );
     }
   }
   if (route.name === "stats") {

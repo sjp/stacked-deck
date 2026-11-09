@@ -26,10 +26,17 @@ interface Props {
     readonly onUndo: () => void;
     readonly onClose: () => void;
   };
+  /** Asks before a deal link replaces the game in progress. */
+  readonly link: {
+    readonly open: boolean;
+    /** Ends the game in progress (it counts as abandoned) and deals the link. */
+    readonly onReplace: () => void;
+    readonly onKeep: () => void;
+  };
 }
 
 /** The game screen's overlays: settings, the win celebration and the stuck prompt. */
-export function GameDialogs({ settings, win, help, noMoves }: Props) {
+export function GameDialogs({ settings, win, help, noMoves, link }: Props) {
   const celebration = useWinCelebration(win.won, win.state, win.animate);
   return (
     <>
@@ -75,6 +82,20 @@ export function GameDialogs({ settings, win, help, noMoves }: Props) {
           </button>
           <button type="button" className="button" onClick={noMoves.onClose}>
             Keep playing
+          </button>
+        </div>
+      </Dialog>
+      <Dialog open={link.open} title="Replace your game?" onClose={link.onKeep}>
+        <p>
+          This link opens a different deal. Playing it ends your game in progress, which breaks your
+          win streak.
+        </p>
+        <div className="dialog-actions">
+          <button type="button" className="primary" onClick={link.onReplace}>
+            Play the linked deal
+          </button>
+          <button type="button" className="button" onClick={link.onKeep}>
+            Keep my game
           </button>
         </div>
       </Dialog>

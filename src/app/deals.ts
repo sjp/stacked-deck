@@ -5,7 +5,9 @@ import { WINNABLE_SEEDS } from "../engine/winnableSeeds.ts";
 import type { LoadedGame } from "./gameStore.ts";
 import { loadSavedGame } from "./gameStore.ts";
 import { solveRandomDeal } from "./solverClient.ts";
-import { newGame } from "./useGame.ts";
+import { optionsFromParams } from "./dealLink.ts";
+import { sameOptions } from "./settings.ts";
+import { hasStarted, newGame } from "./useGame.ts";
 
 /**
  * Option sets the solver usually wins within a fraction of a second on a phone. Others
@@ -54,21 +56,56 @@ export async function findWinnableSeed(
   return listedSeed(variant, options);
 }
 
+/** A deal link read from the URL: its seed and its options as raw text. */
+export interface DealLink {
+  readonly seed: number;
+  readonly params: Readonly<Record<string, string>>;
+}
+
+/** A linked deal with its options resolved. */
+export interface LinkedDeal {
+  readonly seed: number;
+  readonly options: VariantOptions;
+}
+
+export interface OpenedGame extends LoadedGame {
+  /** A linked deal waiting for the player to agree to replace the game in progress. */
+  readonly pendingLink?: LinkedDeal | undefined;
+}
+
 /**
- * The saved game for a variant, or else a new deal: the requested seed, a listed winnable
- * one (instant, so the first screen needs no wait), or a random one.
+ * The game to open: the saved game for a variant, or else a new deal of a listed winnable
+ * seed (instant, so the first screen needs no wait) or a random one. A linked deal is
+ * dealt at once unless it would replace a game in progress; then the saved game opens
+ * and the link waits for the player to confirm. Options the link doesn't give (or gives
+ * wrongly) come from `options`, the player's own.
  */
 export function loadGame(
   variant: Variant,
-  seed: number | undefined,
+  dealLink: DealLink | undefined,
   options: VariantOptions,
   auto: AutoMoveOptions,
   winnableOnly: boolean,
-): LoadedGame {
-  const saved = loadSavedGame(variant, seed);
-  if (saved !== undefined) {
-    return saved;
+): OpenedGame {
+  const saved = loadSavedGame(variant);
+  if (dealLink === undefined) {
+    if (saved !== undefined) {
+      return saved;
+    }
+    const dealSeed = winnableOnly ? listedSeed(variant, options) : undefined;
+    return { game: newGame(variant, dealSeed, options, auto), hints: 0, elapsedMs: 0 };
   }
-  const dealSeed = seed ?? (winnableOnly ? listedSeed(variant, options) : undefined);
-  return { game: newGame(variant, dealSeed, options, auto), hints: 0, elapsedMs: 0 };
+  const link = {
+    seed: dealLink.seed,
+    options: optionsFromParams(variant, dealLink.params, options),
+  };
+  if (saved !== undefined) {
+    if (saved.game.seed === link.seed && sameOptions(saved.game.options, link.options)) {
+      return saved;
+    }
+    if (hasStarted(saved.game)) {
+      return { ...saved, pendingLink: link };
+    }
+  }
+  return { game: newGame(variant, link.seed, link.options, auto), hints: 0, elapsedMs: 0 };
 }

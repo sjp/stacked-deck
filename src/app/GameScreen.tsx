@@ -4,7 +4,7 @@ import { GameTable } from "../ui/GameTable.tsx";
 import { useSettings } from "./settingsContext.ts";
 import { GameDialogs } from "./GameDialogs.tsx";
 import { GameStatus, Toolbar } from "./Toolbar.tsx";
-import type { Ending } from "./useGameSession.ts";
+import type { DealLink, Ending } from "./useGameSession.ts";
 import { useGameSession } from "./useGameSession.ts";
 import { useHints } from "./useHints.ts";
 import { useCommandKeys } from "./useKeyDown.ts";
@@ -12,11 +12,11 @@ import { navigate } from "./useRoute.ts";
 
 interface Props {
   readonly variant: Variant;
-  /** Deal this seed instead of a random one. */
-  readonly seed?: number | undefined;
+  /** A deal link to open, read from the URL once. */
+  readonly link?: DealLink | undefined;
 }
 
-export function GameScreen({ variant, seed }: Props) {
+export function GameScreen({ variant, link }: Props) {
   const { settings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -24,7 +24,7 @@ export function GameScreen({ variant, seed }: Props) {
   const [noMovesShown, setNoMovesShown] = useState(false);
   const session = useGameSession({
     variant,
-    seed,
+    link,
     settings,
     paused: settingsOpen || helpOpen || noMovesShown,
   });
@@ -34,15 +34,6 @@ export function GameScreen({ variant, seed }: Props) {
   const noMovesOpen = hints.noUsefulMoves && !settingsOpen;
   if (noMovesOpen !== noMovesShown) {
     setNoMovesShown(noMovesOpen);
-  }
-
-  const [requestedSeed, setRequestedSeed] = useState(seed);
-  if (seed !== requestedSeed) {
-    // The URL asked for a different deal.
-    setRequestedSeed(seed);
-    if (seed !== undefined && seed !== game.seed) {
-      start(game.options, seed);
-    }
   }
 
   useEffect(() => {
@@ -73,12 +64,8 @@ export function GameScreen({ variant, seed }: Props) {
     !settingsOpen && !helpOpen,
   );
 
-  /** Every new deal goes through here, so a linked deal's seed is always dropped. */
   const startNew = (options = game.options, ending?: Ending) => {
     start(options, undefined, ending);
-    if (seed !== undefined) {
-      navigate({ name: "play", variant: variant.id }, true);
-    }
   };
 
   return (
@@ -202,6 +189,11 @@ export function GameScreen({ variant, seed }: Props) {
           },
           onUndo: session.undo,
           onClose: hints.dismiss,
+        }}
+        link={{
+          open: session.linkPending,
+          onReplace: session.openLink,
+          onKeep: session.dropLink,
         }}
       />
     </main>

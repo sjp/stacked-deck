@@ -12,10 +12,10 @@ export interface LoadedGame {
   readonly elapsedMs: number;
 }
 
-/** The saved game for a variant, unless a different deal was asked for. */
-export function loadSavedGame(variant: Variant, seed: number | undefined): LoadedGame | undefined {
+/** The saved game for a variant, if there is one that still loads. */
+export function loadSavedGame(variant: Variant): LoadedGame | undefined {
   const saved = parseSaved(readStored(gameKey(variant.id)));
-  if (saved === undefined || (seed !== undefined && seed !== saved.seed)) {
+  if (saved === undefined) {
     return undefined;
   }
   const game = restoreGame(variant, saved);
