@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { getVariant, VARIANTS } from "../engine/variants/index.ts";
+import { ErrorBoundary } from "./ErrorBoundary.tsx";
 import { GameScreen } from "./GameScreen.tsx";
 import { HomeScreen } from "./HomeScreen.tsx";
 import { SettingsProvider } from "./SettingsProvider.tsx";
@@ -45,9 +46,11 @@ function Screen() {
 
 export function App() {
   return (
-    <SettingsProvider>
-      <Screen />
-      <UpdateToast />
-    </SettingsProvider>
+    <ErrorBoundary>
+      <SettingsProvider>
+        <Screen />
+        <UpdateToast />
+      </SettingsProvider>
+    </ErrorBoundary>
   );
 }
