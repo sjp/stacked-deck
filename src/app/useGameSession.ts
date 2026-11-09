@@ -19,6 +19,8 @@ import {
 } from "./useGame.ts";
 import { useGameClock } from "./useTimer.ts";
 
+export type { Ending } from "./useGameOutcome.ts";
+
 interface Options {
   readonly variant: Variant;
   readonly seed: number | undefined;

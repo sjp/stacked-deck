@@ -4,6 +4,7 @@ import { GameTable } from "../ui/GameTable.tsx";
 import { useSettings } from "./settingsContext.ts";
 import { GameDialogs } from "./GameDialogs.tsx";
 import { GameStatus, Toolbar } from "./Toolbar.tsx";
+import type { Ending } from "./useGameSession.ts";
 import { useGameSession } from "./useGameSession.ts";
 import { useHints } from "./useHints.ts";
 import { useCommandKeys } from "./useKeyDown.ts";
@@ -66,8 +67,9 @@ export function GameScreen({ variant, seed }: Props) {
     !settingsOpen && !helpOpen,
   );
 
-  const startNew = (options = game.options) => {
-    start(options, undefined);
+  /** Every new deal goes through here, so a linked deal's seed is always dropped. */
+  const startNew = (options = game.options, ending?: Ending) => {
+    start(options, undefined, ending);
     if (seed !== undefined) {
       navigate({ name: "play", variant: variant.id }, true);
     }
@@ -157,7 +159,9 @@ export function GameScreen({ variant, seed }: Props) {
           },
           variant,
           currentOptions: game.options,
-          onNewGame: startNew,
+          onNewGame: (options) => {
+            startNew(options);
+          },
         }}
         win={{
           won,
@@ -188,7 +192,7 @@ export function GameScreen({ variant, seed }: Props) {
           open: hints.noUsefulMoves && !settingsOpen,
           canUndo: session.canUndo,
           onNewGame: () => {
-            start(game.options, undefined, "loss");
+            startNew(game.options, "loss");
           },
           onUndo: session.undo,
           onClose: hints.dismiss,
