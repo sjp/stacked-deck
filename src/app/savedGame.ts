@@ -20,14 +20,11 @@ export interface SavedGame {
   readonly undos: number;
   readonly hints: number;
   readonly elapsedMs: number;
-  /** The daily deal's date, if this is one. */
-  readonly daily?: string | undefined;
 }
 
 export interface SaveExtras {
   readonly hints: number;
   readonly elapsedMs: number;
-  readonly daily?: string | undefined;
 }
 
 export function toSaved(game: Game, extras: SaveExtras): SavedGame {
@@ -41,7 +38,6 @@ export function toSaved(game: Game, extras: SaveExtras): SavedGame {
     undos: game.undos,
     hints: extras.hints,
     elapsedMs: extras.elapsedMs,
-    daily: extras.daily,
   };
 }
 
@@ -111,7 +107,7 @@ export function parseSaved(data: unknown): SavedGame | undefined {
   if (!isRecord(data)) {
     return undefined;
   }
-  const { variant, seed, cursor, undos, hints, elapsedMs, daily } = data;
+  const { variant, seed, cursor, undos, hints, elapsedMs } = data;
   const options = parseOptions(data["options"]);
   const steps = parseSteps(data["steps"]);
   if (
@@ -123,12 +119,11 @@ export function parseSaved(data: unknown): SavedGame | undefined {
     cursor >= steps.length ||
     !isCount(undos) ||
     !isCount(hints) ||
-    !isCount(elapsedMs) ||
-    (daily !== undefined && !isString(daily))
+    !isCount(elapsedMs)
   ) {
     return undefined;
   }
-  return { variant, seed, options, steps, cursor, undos, hints, elapsedMs, daily };
+  return { variant, seed, options, steps, cursor, undos, hints, elapsedMs };
 }
 
 /** Rebuilds a game by replaying its moves; undefined if they no longer apply. */

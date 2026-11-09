@@ -17,25 +17,16 @@ interface Options {
   readonly settings: Settings;
   /** Pause the timer (a dialog is open). */
   readonly paused: boolean;
-  /** The date of the daily deal being played, if it is one. */
-  readonly daily?: string | undefined;
 }
 
 /** A game together with its timer, hint count and saving. */
-export function useGameSession({ variant, seed, settings, paused, daily }: Options) {
+export function useGameSession({ variant, seed, settings, paused }: Options) {
   const auto: AutoMoveOptions = useMemo(
     () => ({ safeToFoundation: settings.autoFoundation }),
     [settings.autoFoundation],
   );
   const [initial] = useState(() =>
-    loadGame(
-      variant,
-      seed,
-      daily === undefined ? optionsFor(settings, variant) : variant.defaultOptions,
-      auto,
-      settings.winnableOnly,
-      daily,
-    ),
+    loadGame(variant, seed, optionsFor(settings, variant), auto, settings.winnableOnly),
   );
   const { game, dispatch, replace } = useGame(() => initial.game);
   const [hints, setHints] = useState(initial.hints);
@@ -50,9 +41,9 @@ export function useGameSession({ variant, seed, settings, paused, daily }: Optio
   useAutoFinish(variant, state, finishing, settings.animation, auto, dispatch);
 
   const [gameNumber, setGameNumber] = useState(0);
-  const outcome = useGameOutcome(game, gameNumber, won, timer, hints, daily);
+  const outcome = useGameOutcome(game, gameNumber, won, timer, hints);
 
-  useAutoSave(game, hints, timer, daily);
+  useAutoSave(game, hints, timer);
 
   const { end } = outcome;
   const [dealing, setDealing] = useState(false);

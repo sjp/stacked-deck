@@ -48,6 +48,11 @@ describe("saved games", () => {
     expect(parseSaved({ ...good, cursor: 5 })).toBeUndefined();
   });
 
+  it("ignores fields it no longer uses", () => {
+    const good = toSaved(newGame(klondike, 1, { draw: 1 }, AUTO), { hints: 0, elapsedMs: 0 });
+    expect(parseSaved({ ...good, daily: "2026-11-06" })).toEqual(good);
+  });
+
   it("rejects moves that no longer apply", () => {
     const good = toSaved(newGame(klondike, 1, { draw: 1 }, AUTO), { hints: 0, elapsedMs: 0 });
     const bad = {
