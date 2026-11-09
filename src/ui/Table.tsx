@@ -14,6 +14,52 @@ export interface Highlight {
   readonly to?: PileId;
 }
 
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A slide in progress, so a move that interrupts it can start from where the card is. */
+interface Motion {
+  readonly from: Point;
+  readonly to: Point;
+  readonly start: number;
+  readonly ms: number;
+}
+
+/** Where a sliding card is now, following the CSS ease-out curve closely enough. */
+function currentPosition(motion: Motion | undefined, now: number, fallback: Point): Point {
+  if (motion === undefined || now >= motion.start + motion.ms) {
+    return fallback;
+  }
+  const t = Math.max(0, (now - motion.start) / motion.ms);
+  const eased = 1 - (1 - t) ** 2;
+  return {
+    x: motion.from.x + (motion.to.x - motion.from.x) * eased,
+    y: motion.from.y + (motion.to.y - motion.from.y) * eased,
+  };
+}
+
+/** A CSS length or time as a number of its unit ("12px" → 12, "0.18s" → 0.18), or 0. */
+function cssNumber(text: string, unit: string): number {
+  const value = Number(text.trim().slice(0, -unit.length));
+  return text.trim().endsWith(unit) && Number.isFinite(value) ? value : 0;
+}
+
+/** The drag offset is still set on the table while the drop commits. */
+function withDragOffset(element: Element, point: Point): Point {
+  const style = getComputedStyle(element);
+  return {
+    x: point.x + cssNumber(style.getPropertyValue("--drag-x"), "px"),
+    y: point.y + cssNumber(style.getPropertyValue("--drag-y"), "px"),
+  };
+}
+
+function durationMs(element: Element): number {
+  const text = getComputedStyle(element).transitionDuration.split(",")[0] ?? "";
+  return text.trim().endsWith("ms") ? cssNumber(text, "ms") : cssNumber(text, "s") * 1000;
+}
+
 interface CardSlotProps {
   readonly placement: CardPlacement;
   readonly label: string;
@@ -39,28 +85,41 @@ const CardSlot = memo(function CardSlot({
   shaking,
 }: CardSlotProps) {
   const ref = useRef<HTMLButtonElement>(null);
-  const previous = useRef<{ x: number; y: number } | undefined>(undefined);
+  const previous = useRef<Point | undefined>(undefined);
+  const motion = useRef<Motion | undefined>(undefined);
+  const wasDragging = useRef(dragging);
   const { x, y, z, card } = placement;
 
   useLayoutEffect(() => {
     const element = ref.current;
     const last = previous.current;
     previous.current = { x, y };
-    if (element === null || last === undefined || (last.x === x && last.y === y) || dragging) {
+    const dropped = wasDragging.current && !dragging;
+    wasDragging.current = dragging;
+    if (element === null || last === undefined || dragging) {
       return undefined;
     }
-    // With no transition (reduced motion) the move is instant: no slide, no lift.
-    if (getComputedStyle(element).transitionDuration === "0s") {
+    // Start where the card is on screen: where it was let go after a drag, or part way
+    // along a move that is still running.
+    const now = performance.now();
+    const from = dropped
+      ? withDragOffset(element, last)
+      : currentPosition(motion.current, now, last);
+    const ms = durationMs(element);
+    if ((from.x === x && from.y === y) || ms === 0) {
+      // With no transition (reduced motion) the move is instant: no slide, no lift.
+      motion.current = undefined;
       return undefined;
     }
-    // Start from the old position explicitly: React moves the node when a card changes
-    // places in the list (onto a later pile), and a moved node would otherwise jump.
+    // Set the start explicitly: React moves the node when a card changes places in the
+    // list (onto a later pile), and a moved node would otherwise jump.
     element.style.transition = "none";
-    element.style.transform = `translate(${last.x}px, ${last.y}px)`;
+    element.style.transform = `translate(${from.x}px, ${from.y}px)`;
     element.getBoundingClientRect();
     element.style.transition = "";
     element.style.transform = `translate(${x}px, ${y}px)`;
     element.classList.add("moving");
+    motion.current = { from, to: { x, y }, start: now, ms };
     const done = () => {
       element.classList.remove("moving");
       element.removeEventListener("transitionend", onEnd);
@@ -71,10 +130,11 @@ const CardSlot = memo(function CardSlot({
       }
     };
     element.addEventListener("transitionend", onEnd);
-    const timer = setTimeout(done, 1000);
+    const timer = setTimeout(done, ms + 500);
     return () => {
       clearTimeout(timer);
-      element.removeEventListener("transitionend", onEnd);
+      // Drop the lift; a move that starts straight away adds it back before painting.
+      done();
     };
   }, [x, y, dragging]);
 

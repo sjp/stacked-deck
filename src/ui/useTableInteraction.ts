@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { findPile } from "../engine/state.ts";
 import type { GameState, Move, PileId } from "../engine/types.ts";
@@ -146,6 +146,13 @@ export function useTableInteraction({
     },
     [tableRef],
   );
+  // The offset is cleared only after a drop commits, so each card's own layout effect
+  // (which runs first) can still read where it was let go and slide on from there.
+  useLayoutEffect(() => {
+    if (drag === undefined) {
+      setDragOffset(0, 0);
+    }
+  }, [drag, setDragOffset]);
 
   const playMove = useCallback(
     (move: Move): boolean => {
@@ -344,7 +351,6 @@ export function useTableInteraction({
         }
       }
       setDrag(undefined);
-      setDragOffset(0, 0);
       if (best === undefined || !playMove(best)) {
         shake(current);
         const pointed = cardRefFromElement(
@@ -364,7 +370,7 @@ export function useTableInteraction({
         }
       }
     },
-    [geometry, playMove, say, setDragOffset, shake, state, tableRef, variant],
+    [geometry, playMove, say, shake, state, tableRef, variant],
   );
 
   const onPointerUp = useCallback(
@@ -386,10 +392,9 @@ export function useTableInteraction({
   const onPointerCancel = useCallback(() => {
     if (press.current?.dragging === true) {
       setDrag(undefined);
-      setDragOffset(0, 0);
     }
     press.current = undefined;
-  }, [setDragOffset]);
+  }, []);
 
   /** Sends a card to a foundation (or discards it), as a double-click would. */
   const toFoundation = useCallback(
