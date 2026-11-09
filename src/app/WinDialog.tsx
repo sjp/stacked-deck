@@ -19,7 +19,7 @@ export interface WinSummary {
 }
 
 interface Props {
-  readonly summary: WinSummary | undefined;
+  readonly summary: WinSummary;
   readonly onNewGame: () => void;
   readonly onClose: () => void;
 }
@@ -33,16 +33,20 @@ function Stat({ label, value }: { readonly label: string; readonly value: string
   );
 }
 
+const SHARE_MESSAGES = {
+  shared: "Shared",
+  copied: "Link copied",
+  cancelled: undefined,
+  failed: "Couldn't share",
+} as const;
+
 export function WinDialog({ summary, onNewGame, onClose }: Props) {
   const [shared, setShared] = useState<string>();
-  if (summary === undefined) {
-    return undefined;
-  }
   const share = async () => {
     const time = formatTime(summary.elapsedMs);
     const line = `Stacked Deck — ${summary.variant.name} — won in ${time}, ${summary.moves} moves.`;
     const result = await shareText(line, dealUrl(summary.variant, summary.seed, summary.options));
-    setShared(result === "copied" ? "Link copied" : result === "shared" ? "Shared" : undefined);
+    setShared(SHARE_MESSAGES[result]);
   };
   return (
     <Dialog open title="You won!" onClose={onClose}>

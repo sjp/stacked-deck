@@ -3,7 +3,7 @@ import type { Variant } from "../engine/variant.ts";
 import { optionParams } from "./dealLink.ts";
 import { routeHash } from "./route.ts";
 
-export type ShareResult = "shared" | "copied" | "failed";
+export type ShareResult = "shared" | "copied" | "cancelled" | "failed";
 
 /** A link that opens this exact deal, with the options it was dealt with. */
 export function dealUrl(variant: Variant, seed: number, options: VariantOptions): string {
@@ -17,21 +17,38 @@ export function dealUrl(variant: Variant, seed: number, options: VariantOptions)
   return `${origin}${pathname}${hash}`;
 }
 
-/** Shares text (and a link) with the Web Share API, or copies it to the clipboard. */
-export async function shareText(text: string, url?: string): Promise<ShareResult> {
-  const data = url === undefined ? { text } : { text, url };
+async function copy(text: string): Promise<ShareResult> {
   try {
-    if (typeof navigator.share === "function" && navigator.canShare(data)) {
-      await navigator.share(data);
-      return "shared";
-    }
-    await navigator.clipboard.writeText(url === undefined ? text : `${text} ${url}`);
+    await navigator.clipboard.writeText(text);
     return "copied";
   } catch (error) {
+    console.warn("Copy failed", error);
+    return "failed";
+  }
+}
+
+/**
+ * Shares text (and a link) with the Web Share API, or copies it to the clipboard where
+ * sharing isn't available or fails. "cancelled" means the player closed the share sheet.
+ */
+export async function shareText(text: string, url?: string): Promise<ShareResult> {
+  const data = url === undefined ? { text } : { text, url };
+  const whole = url === undefined ? text : `${text} ${url}`;
+  // Some browsers have share() without canShare().
+  const canShare =
+    typeof navigator.share === "function" &&
+    (typeof navigator.canShare !== "function" || navigator.canShare(data));
+  if (!canShare) {
+    return copy(whole);
+  }
+  try {
+    await navigator.share(data);
+    return "shared";
+  } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      return "failed";
+      return "cancelled";
     }
     console.warn("Share failed", error);
-    return "failed";
+    return copy(whole);
   }
 }

@@ -58,13 +58,16 @@ export function GameDialogs({ settings, win, help, noMoves, confirmNew, link }: 
           }}
         />
       ) : undefined}
-      <WinDialog
-        summary={celebration.phase === "dialog" ? win.summary : undefined}
-        onNewGame={win.onNewGame}
-        onClose={() => {
-          celebration.setPhase("closed");
-        }}
-      />
+      {/* Mounted only while shown, so "Link copied" never carries over to the next win. */}
+      {celebration.phase === "dialog" ? (
+        <WinDialog
+          summary={win.summary}
+          onNewGame={win.onNewGame}
+          onClose={() => {
+            celebration.setPhase("closed");
+          }}
+        />
+      ) : undefined}
       <Dialog open={help.open} title="Keyboard" onClose={help.onClose}>
         <dl className="key-help">
           {KEY_HELP.map(([keys, action]) => (
