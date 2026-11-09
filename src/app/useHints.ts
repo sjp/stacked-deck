@@ -4,7 +4,7 @@ import { findPile } from "../engine/state.ts";
 import type { GameState, Move } from "../engine/types.ts";
 import type { AutoMoveOptions, Variant } from "../engine/variant.ts";
 import type { Highlight } from "../ui/Table.tsx";
-import { solverHint } from "./solverClient.ts";
+import { solverLine } from "./solverClient.ts";
 
 /** How long the solver may look for a winning line before the rule-based hint stands. */
 const SOLVER_HINT_MS = 300;
@@ -83,13 +83,14 @@ export function useHints(
         const controller = new AbortController();
         request.current = { state, controller };
         const ask = async () => {
-          const found = await solverHint(
+          const moves = await solverLine(
             variant.id,
             state,
             auto,
             SOLVER_HINT_MS,
             controller.signal,
           );
+          const found = moves?.[0];
           // A move that doesn't fit this position would point at the wrong cards.
           if (found !== undefined && variant.canMove(state, found)) {
             setSolved({ state, move: found });

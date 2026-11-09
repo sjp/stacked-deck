@@ -121,17 +121,20 @@ export function createSolverClient(spawn: () => WorkerLike | undefined) {
       return response?.type === "deal" ? response.seed : undefined;
     },
 
-    /** The first move of a solution from this position, if one is found in time. */
-    solverHint: async (
+    /**
+     * A winning line from this position, if one is found in time. The worker settles the
+     * position with `auto` first and each later one with the solver's own automatic moves.
+     */
+    solverLine: async (
       variant: string,
       state: GameState,
       auto: AutoMoveOptions,
       budgetMs: number,
       signal?: AbortSignal,
-    ): Promise<Move | undefined> => {
+    ): Promise<readonly Move[] | undefined> => {
       const id = nextId++;
       const response = await ask({ type: "hint", id, variant, state, auto, budgetMs }, signal);
-      return response?.type === "hint" ? response.move : undefined;
+      return response?.type === "hint" ? response.moves : undefined;
     },
   };
 }
@@ -142,4 +145,4 @@ const client = createSolverClient(() =>
     : new Worker(new URL("solverWorker.ts", import.meta.url), { type: "module" }),
 );
 
-export const { solveRandomDeal, solverHint } = client;
+export const { solveRandomDeal, solverLine } = client;

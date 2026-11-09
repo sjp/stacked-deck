@@ -31,5 +31,6 @@ export type SolverMessage = SolverRequest | CancelMessage;
 
 export type SolverResponse =
   | { readonly type: "deal"; readonly id: number; readonly seed: number | undefined }
-  | { readonly type: "hint"; readonly id: number; readonly move: Move | undefined }
+  /** A winning line from the hint's position, if one was found in time. */
+  | { readonly type: "hint"; readonly id: number; readonly moves: readonly Move[] | undefined }
   | { readonly type: "error"; readonly id: number; readonly message: string };

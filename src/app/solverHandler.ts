@@ -18,7 +18,7 @@ export function handle(request: SolverRequest): SolverResponse {
     return {
       type: "hint",
       id: request.id,
-      move: result?.status === "solved" ? result.moves[0] : undefined,
+      moves: result?.status === "solved" ? result.moves : undefined,
     };
   }
   if (variant === undefined) {

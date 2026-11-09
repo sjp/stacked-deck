@@ -56,13 +56,13 @@ describe("solver client", () => {
   });
 
   it("rejects when the worker answers with an error", async () => {
-    const hint = client.solverHint("klondike", STATE, AUTO, 300);
+    const hint = client.solverLine("klondike", STATE, AUTO, 300);
     workers[0]!.emit("message", { type: "error", id: workers[0]!.sent[0]!.id, message: "boom" });
     await expect(hint).rejects.toThrow("boom");
   });
 
   it("rejects everything pending when the worker fails, then starts a new worker", async () => {
-    const first = client.solverHint("klondike", STATE, AUTO, 300);
+    const first = client.solverLine("klondike", STATE, AUTO, 300);
     const second = client.solveRandomDeal("freecell", {}, 700, 150);
     workers[0]!.emit("error");
     await expect(first).rejects.toThrow("worker failed");
@@ -85,7 +85,7 @@ describe("solver client", () => {
 
   it("settles a cancelled request with nothing and stops the worker if idle", async () => {
     const controller = new AbortController();
-    const hint = client.solverHint("klondike", STATE, AUTO, 300, controller.signal);
+    const hint = client.solverLine("klondike", STATE, AUTO, 300, controller.signal);
     controller.abort();
     await expect(hint).resolves.toBeUndefined();
     expect(workers[0]!.terminated).toBe(true);
@@ -94,7 +94,7 @@ describe("solver client", () => {
   it("asks the worker to skip a cancelled request while others wait", async () => {
     const controller = new AbortController();
     const deal = client.solveRandomDeal("freecell", {}, 700, 150);
-    const hint = client.solverHint("klondike", STATE, AUTO, 300, controller.signal);
+    const hint = client.solverLine("klondike", STATE, AUTO, 300, controller.signal);
     controller.abort();
     await expect(hint).resolves.toBeUndefined();
     const [dealRequest, hintRequest] = workers[0]!.sent;

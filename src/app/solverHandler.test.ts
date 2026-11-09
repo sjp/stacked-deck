@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { play, settle } from "../engine/game.ts";
 import { klondike } from "../engine/variants/klondike/klondike.ts";
 import type { Move } from "../engine/types.ts";
 import { handle, respond } from "./solverHandler.ts";
@@ -6,13 +7,13 @@ import type { SolverResponse } from "./solverProtocol.ts";
 
 const AUTO = { safeToFoundation: true };
 
-const hintMove = (response: SolverResponse): Move | undefined =>
-  response.type === "hint" ? response.move : undefined;
+const hintLine = (response: SolverResponse): readonly Move[] | undefined =>
+  response.type === "hint" ? response.moves : undefined;
 const dealSeed = (response: SolverResponse): number | undefined =>
   response.type === "deal" ? response.seed : undefined;
 
 describe("solver worker requests", () => {
-  it("answers a hint with a legal move", () => {
+  it("answers a hint with a winning line from the position", () => {
     const state = klondike.deal(1, { draw: 1 });
     const response = handle({
       type: "hint",
@@ -23,7 +24,13 @@ describe("solver worker requests", () => {
       budgetMs: 2000,
     });
     expect(response).toMatchObject({ type: "hint", id: 1 });
-    expect(klondike.canMove(state, hintMove(response)!)).toBe(true);
+    const moves = hintLine(response)!;
+    expect(klondike.canMove(state, moves[0]!)).toBe(true);
+    let end = settle(klondike, state, AUTO).state;
+    for (const move of moves) {
+      end = play(klondike, end, move, AUTO)!.state;
+    }
+    expect(klondike.isWon(end)).toBe(true);
   });
 
   // Seeds are random, so the budget is generous: it returns as soon as one is won.
