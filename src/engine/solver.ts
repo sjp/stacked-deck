@@ -42,10 +42,19 @@ interface Frame {
   next: number;
 }
 
+interface Search {
+  readonly variant: Variant;
+  readonly limits: SolveLimits;
+  readonly auto: AutoMoveOptions;
+  readonly now: () => number;
+  readonly deadline: number;
+  readonly key: (state: GameState) => string;
+}
+
 /**
- * Depth-first search for a win, remembering positions already seen. It searches with
- * every card known (for Klondike, that is how a "winnable" deal is usually defined).
- * The returned moves are player moves; automatic moves follow each one, as in play.
+ * Searches for a win, remembering positions already seen. It searches with every card
+ * known (for Klondike, that is how a "winnable" deal is usually defined). The returned
+ * moves are player moves; automatic moves follow each one, as in play.
  */
 export function solve(
   variant: Variant,
@@ -53,17 +62,34 @@ export function solve(
   limits: SolveLimits,
   { auto = SOLVER_AUTO, startAuto = auto, now = () => Date.now() }: SolveOptions = {},
 ): SolveResult {
-  const deadline = now() + limits.maxMs;
-  const key = (state: GameState) => variant.stateKey?.(state) ?? pilesKey(state);
+  const search: Search = {
+    variant,
+    limits,
+    auto,
+    now,
+    deadline: now() + limits.maxMs,
+    key: (state) => variant.stateKey?.(state) ?? pilesKey(state),
+  };
   const first = settle(variant, start, startAuto).state;
+  if (variant.isWon(first)) {
+    return { status: "solved", moves: [], nodes: 0 };
+  }
+  return depthFirst(search, first);
+}
+
+/** Whether the search has used up its node or time budget after `nodes` moves tried. */
+function outOfBudget({ limits, now, deadline }: Search, nodes: number): boolean {
+  return nodes > limits.maxNodes || (nodes % 256 === 0 && now() > deadline);
+}
+
+/** Tries moves in hint order, deepest first. */
+function depthFirst(search: Search, first: GameState): SolveResult {
+  const { variant, auto, key } = search;
   const seen = new Set<string>([key(first)]);
   const path: Move[] = [];
   const stack: Frame[] = [{ state: first, moves: rankHints(variant, first), next: 0 }];
   let nodes = 0;
 
-  if (variant.isWon(first)) {
-    return { status: "solved", moves: [], nodes };
-  }
   while (stack.length > 0) {
     const frame = stack.at(-1);
     if (frame === undefined) {
@@ -77,7 +103,7 @@ export function solve(
       continue;
     }
     nodes += 1;
-    if (nodes > limits.maxNodes || (nodes % 256 === 0 && now() > deadline)) {
+    if (outOfBudget(search, nodes)) {
       return { status: "gave-up", nodes };
     }
     const next = settle(variant, variant.applyMove(frame.state, move), auto).state;
