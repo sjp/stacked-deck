@@ -3,7 +3,21 @@ import { onFeedback } from "./feedback.ts";
 import { createHaptics } from "./haptics.ts";
 import { createSoundPlayer } from "./sound.ts";
 
-const sound = createSoundPlayer(() => new AudioContext());
+function isConstructor(value: unknown): value is typeof AudioContext {
+  return typeof value === "function";
+}
+
+/** Older iOS Safari has only the prefixed constructor. */
+function createAudioContext(): AudioContext {
+  const prefixed: unknown = Reflect.get(globalThis, "webkitAudioContext");
+  const Context = typeof AudioContext === "undefined" ? prefixed : AudioContext;
+  if (!isConstructor(Context)) {
+    throw new Error("Web Audio isn't supported");
+  }
+  return new Context();
+}
+
+const sound = createSoundPlayer(createAudioContext);
 const haptics = createHaptics(typeof navigator === "undefined" ? undefined : navigator);
 
 /** Plays sounds and haptics for game events, as the settings allow. */

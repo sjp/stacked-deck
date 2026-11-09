@@ -23,9 +23,25 @@ describe("sound", () => {
     const player = createSoundPlayer(factory);
     player.configure(true, 0.5);
     expect(factory).not.toHaveBeenCalled();
-    expect(() => {
-      player.unlock();
-    }).toThrow("created");
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    player.unlock();
     expect(factory).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("sound failures", () => {
+  it("turns sound off for the visit when audio can't be created", () => {
+    const factory = vi.fn<() => AudioContext>(() => {
+      throw new ReferenceError("AudioContext is not defined");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const player = createSoundPlayer(factory);
+    player.configure(true, 1);
+    expect(() => {
+      player.play("drop");
+      player.play("win");
+    }).not.toThrow();
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(player.hasContext()).toBe(false);
   });
 });

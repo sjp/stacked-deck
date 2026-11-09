@@ -73,20 +73,31 @@ export function createSoundPlayer(createContext: AudioContextFactory): SoundPlay
   let master: GainNode | undefined;
   let enabled = false;
   let volume = 0.6;
+  /** Set once audio can't be created here, so sound stays off for the visit. */
+  let broken = false;
 
   const ensure = (): AudioContext | undefined => {
-    if (!enabled) {
+    if (!enabled || broken) {
       return undefined;
     }
     if (context === undefined) {
-      context = createContext();
-      master = context.createGain();
-      master.connect(context.destination);
+      try {
+        context = createContext();
+        master = context.createGain();
+        master.connect(context.destination);
+      } catch (error) {
+        console.warn("Sound isn't available", error);
+        broken = true;
+        context = undefined;
+        master = undefined;
+        return undefined;
+      }
     }
     if (master !== undefined) {
       master.gain.value = volume;
     }
-    if (context.state === "suspended") {
+    // "suspended" before a gesture, or "interrupted" on iOS after a call or backgrounding.
+    if (context.state !== "running") {
       context.resume().catch((error: unknown) => {
         console.warn("Audio could not start", error);
       });
@@ -111,8 +122,12 @@ export function createSoundPlayer(createContext: AudioContextFactory): SoundPlay
       if (audio === undefined || master === undefined) {
         return;
       }
-      for (const voice of SOUNDS[event]) {
-        voice(audio, master, audio.currentTime);
+      try {
+        for (const voice of SOUNDS[event]) {
+          voice(audio, master, audio.currentTime);
+        }
+      } catch (error) {
+        console.warn("Sound failed", error);
       }
     },
     hasContext: () => context !== undefined,
