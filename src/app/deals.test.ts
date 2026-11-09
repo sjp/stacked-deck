@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { klondike } from "../engine/variants/klondike/klondike.ts";
 import { spider } from "../engine/variants/spider/spider.ts";
-import { loadGame } from "./deals.ts";
+import { listedSeed, loadGame, winnableAvailable } from "./deals.ts";
 import { saveGame } from "./gameStore.ts";
 import { memoryStore } from "./storage.ts";
 import type { Game } from "./useGame.ts";
@@ -56,5 +56,18 @@ describe("opening games and deal links", () => {
     const opened = loadGame(klondike, { seed: 2, params: {} }, { draw: 1 }, AUTO, true);
     expect(opened.game.seed).toBe(2);
     expect(opened.pendingLink).toBeUndefined();
+  });
+});
+
+describe("winnable deal sources", () => {
+  it("know which option sets have winnable deals", () => {
+    expect(winnableAvailable(klondike, { draw: 1 })).toBe(true);
+    expect(winnableAvailable(spider, { suits: 1 })).toBe(true);
+  });
+
+  it("pick listed seeds by the random number given", () => {
+    const first = listedSeed(klondike, { draw: 3 }, () => 0);
+    expect(first).toBeTypeOf("number");
+    expect(listedSeed(klondike, { draw: 3 }, () => 0)).toBe(first);
   });
 });
