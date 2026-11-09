@@ -28,8 +28,18 @@ const POSITIONS = Array.from({ length: ROWS }, (_, row) =>
   Array.from({ length: row + 1 }, (__, column) => ({ row, column, id: pyramidId(row, column) })),
 ).flat();
 
+interface PyramidOptions {
+  readonly passes: 3 | "unlimited";
+}
+
+/** Reads the options; stored and linked deals keep unlimited passes as `passes: 0`. */
+function readOptions(options: VariantOptions): PyramidOptions {
+  return { passes: options["passes"] === 0 ? "unlimited" : 3 };
+}
+
 function passes(state: GameState): number {
-  return state.options["passes"] === 0 ? Number.POSITIVE_INFINITY : 3;
+  const { passes: allowed } = readOptions(state.options);
+  return allowed === "unlimited" ? Number.POSITIVE_INFINITY : allowed;
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
@@ -39,7 +49,7 @@ function deal(seed: number, options: VariantOptions): GameState {
   return {
     variant: "pyramid",
     seed: normalized,
-    options: { passes: options["passes"] === 0 ? 0 : 3 },
+    options: { passes: readOptions(options).passes === "unlimited" ? 0 : 3 },
     piles: [
       ...POSITIONS.map(({ id }, i) => makePile(id, "tableau", deck.slice(i, i + 1))),
       makePile(STOCK, "stock", stock),

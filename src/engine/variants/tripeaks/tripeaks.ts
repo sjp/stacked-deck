@@ -48,8 +48,13 @@ export function coveringCards(index: number): number[] {
   return [ROW_STARTS[1] + 2 * index, ROW_STARTS[1] + 2 * index + 1];
 }
 
+/** Reads the options: wrapping from King to Ace is on unless turned off. */
+function readOptions(options: VariantOptions): { readonly wrap: boolean } {
+  return { wrap: options["wrap"] !== false };
+}
+
 function rules(state: GameState) {
-  return { wrap: state.options["wrap"] !== false, onKing: true };
+  return { ...readOptions(state.options), onKing: true };
 }
 
 function deal(seed: number, options: VariantOptions): GameState {
@@ -66,7 +71,7 @@ function deal(seed: number, options: VariantOptions): GameState {
   return {
     variant: "tripeaks",
     seed: normalized,
-    options: { wrap: options["wrap"] !== false },
+    options: { ...readOptions(options) },
     piles: [
       ...table,
       makePile(STOCK, "stock", deck.slice(SIZE + 1)),

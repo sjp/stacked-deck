@@ -17,8 +17,13 @@ const WASTE = "waste";
 const COLUMNS = ["t0", "t1", "t2", "t3", "t4", "t5", "t6"] as const;
 const DEPTH = 5;
 
+/** Reads the options: both rules are off unless turned on. */
+function readOptions(options: VariantOptions): WasteRules {
+  return { wrap: options["wrap"] === true, onKing: options["onKing"] === true };
+}
+
 function rules(state: GameState): WasteRules {
-  return { wrap: state.options["wrap"] === true, onKing: state.options["onKing"] === true };
+  return readOptions(state.options);
 }
 
 /**
@@ -40,7 +45,7 @@ function deal(seed: number, options: VariantOptions): GameState {
   const state: GameState = {
     variant: "golf",
     seed: normalized,
-    options: { wrap: options["wrap"] === true, onKing: options["onKing"] === true },
+    options: { ...readOptions(options) },
     piles: [
       ...tableau,
       makePile(
