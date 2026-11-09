@@ -331,7 +331,6 @@ export const spider: Variant = {
   applyMove,
   autoMove,
   isWon: (state) => pilesOfKind(state, "foundation").every((pile) => pile.cards.length === 13),
-  isStuck: (state) => legalMoves(state).length === 0,
   canPickUp,
   dropMove,
   tapMoves,

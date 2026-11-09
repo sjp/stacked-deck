@@ -288,7 +288,6 @@ export const pyramid: Variant = {
   applyMove,
   autoMove: () => undefined,
   isWon: (state) => POSITIONS.every(({ id }) => isEmpty(state, id)),
-  isStuck: (state) => legalMoves(state).length === 0,
   canPickUp,
   dropMove,
   tapMoves,

@@ -69,8 +69,6 @@ export interface Variant {
   isWon(state: GameState): boolean;
   /** True once the game can be finished with foundation moves alone. */
   canFinish?(state: GameState): boolean;
-  /** True when no move can help any more, so the game is lost. */
-  isStuck?(state: GameState): boolean;
 
   /** Whether the player may pick up `pile.cards[index..]`. */
   canPickUp(state: GameState, pile: PileId, index: number): boolean;

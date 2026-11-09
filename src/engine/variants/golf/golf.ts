@@ -151,7 +151,6 @@ export const golf: Variant = {
   applyMove,
   autoMove: () => undefined,
   isWon: (state) => pilesOfKind(state, "tableau").every((pile) => pile.cards.length === 0),
-  isStuck: (state) => legalMoves(state).length === 0,
   canPickUp: (state, pile, index) =>
     canPlay(state, pile) && index === getPile(state, pile).cards.length - 1,
   dropMove: (state, from, _index, to) =>

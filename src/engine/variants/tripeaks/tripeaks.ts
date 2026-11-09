@@ -236,7 +236,6 @@ export const tripeaks: Variant = {
   applyMove,
   autoMove,
   isWon: (state) => Array.from({ length: SIZE }, (_, i) => i).every((i) => isEmpty(state, i)),
-  isStuck: (state) => legalMoves(state).length === 0,
   canPickUp: (state, pile) => canPlay(state, pile),
   dropMove: (state, from, _index, to) =>
     to === WASTE && canPlay(state, from) ? { kind: "move", from, index: 0, to } : undefined,

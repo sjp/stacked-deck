@@ -105,7 +105,6 @@ describe("play", () => {
   it("has one pass through the stock", () => {
     const state = table({ 20: "9H" }, "2C");
     expect(tripeaks.legalMoves(state)).toEqual([]);
-    expect(tripeaks.isStuck?.(state)).toBe(true);
   });
 });
 

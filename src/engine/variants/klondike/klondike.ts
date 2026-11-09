@@ -455,7 +455,6 @@ export const klondike: Variant = {
   autoMove,
   isWon: (state) => cardsOnFoundations(state) === 52,
   canFinish,
-  isStuck: (state) => legalMoves(state).length === 0,
   canPickUp,
   dropMove,
   tapMoves,
