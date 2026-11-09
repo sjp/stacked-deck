@@ -187,12 +187,17 @@ function applyMove(state: GameState, move: Move): GameState {
   const next = withPiles(state, changes);
   const rowsAfter = rowsCleared(next);
   const newRows = rowsAfter - rowsCleared(state);
-  const cleared = rowsAfter === ROWS ? PYRAMID_POINTS.cleared : 0;
+  // Only the move that clears the last row earns the bonus; pairs after the win don't.
+  const cleared = newRows > 0 && rowsAfter === ROWS ? PYRAMID_POINTS.cleared : 0;
   return addScore(next, PYRAMID_POINTS.removal + newRows * PYRAMID_POINTS.row + cleared);
 }
 
 function legalMoves(state: GameState): Move[] {
   const moves: Move[] = [];
+  if (rowsCleared(state) === ROWS) {
+    // The game is won; pairing what's left of the stock would only add points.
+    return moves;
+  }
   const available = availablePiles(state);
   // Every pile here is available, so a pair only has to add up to 13.
   const ranks = available.map((pile) => topCard(pile)?.rank ?? 0);

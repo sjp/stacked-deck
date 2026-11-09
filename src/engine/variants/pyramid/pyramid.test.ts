@@ -4,7 +4,7 @@ import { solve } from "../../solver.ts";
 import { findPile, getPile } from "../../state.ts";
 import { allOfferedMovesLegal, cards, codes, makeState, walk } from "../../testing.ts";
 import type { GameState } from "../../types.ts";
-import { isExposed, pyramid, pyramidId } from "./pyramid.ts";
+import { isExposed, PYRAMID_POINTS, pyramid, pyramidId } from "./pyramid.ts";
 
 /** A pyramid from rows of shorthand ("" for a removed card), plus stock and waste. */
 const THREE_PASSES = { passes: 3 };
@@ -185,5 +185,16 @@ describe("state keys", () => {
       status: "exhausted",
     });
     expect(hasUsefulMoves(pyramid, state)).toBe(false);
+  });
+});
+
+describe("after the win", () => {
+  it("awards the cleared bonus once and offers no more moves", () => {
+    const state = table([["KS"]], "6C", "7D");
+    const won = pyramid.applyMove(state, { kind: "remove", piles: ["p0"] });
+    expect(pyramid.isWon(won)).toBe(true);
+    expect(pyramid.legalMoves(won)).toEqual([]);
+    const late = pyramid.applyMove(won, { kind: "remove", piles: ["stock", "waste"] });
+    expect(late.score - won.score).toBe(PYRAMID_POINTS.removal);
   });
 });
