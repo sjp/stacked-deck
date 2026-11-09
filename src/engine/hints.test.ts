@@ -3,6 +3,20 @@ import { hasUsefulMoves, rankHints } from "./hints.ts";
 import { makeState } from "./testing.ts";
 import type { GameState } from "./types.ts";
 import { klondike } from "./variants/klondike/klondike.ts";
+import { spider } from "./variants/spider/spider.ts";
+
+/** Two-suit Spider with an empty stock and the given columns. */
+function spiderTable(columns: readonly string[]): GameState {
+  return makeState(
+    "spider",
+    [
+      { id: "stock", kind: "stock" },
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({ id: `f${i}`, kind: "foundation" as const })),
+      ...columns.map((cards, i) => ({ id: `t${i}`, kind: "tableau" as const, cards })),
+    ],
+    { suits: 2 },
+  );
+}
 
 function table(spec: { stock?: string; waste?: string; f?: string[]; t?: string[] }): GameState {
   return makeState(
@@ -48,6 +62,27 @@ describe("rankHints", () => {
     const state = table({ f: ["AS"], t: ["3H 2S 9H", "10C"] });
     // 9H isn't on a valid parent here, so this simply uncovers the 2 of spades.
     expect(rankHints(klondike, state)[0]).toEqual({ kind: "move", from: "t0", index: 2, to: "t1" });
+  });
+
+  it("suggests a run off one parent when it frees that parent for the foundation", () => {
+    const state = table({ f: ["AS 2S"], t: ["3S 2H", "3C"] });
+    expect(rankHints(klondike, state)[0]).toEqual({ kind: "move", from: "t0", index: 1, to: "t1" });
+  });
+
+  it("suggests moving a run onto a parent of its own suit in Spider", () => {
+    const state = spiderTable(["-3C 6S 5H", "-4C 6H"]);
+    expect(rankHints(spider, state)).toContainEqual({
+      kind: "move",
+      from: "t0",
+      index: 2,
+      to: "t1",
+    });
+    expect(hasUsefulMoves(spider, state)).toBe(true);
+  });
+
+  it("skips moving a Spider run off a parent of its own suit", () => {
+    const state = spiderTable(["-3C 6H 5H", "-4C 6S"]);
+    expect(rankHints(spider, state)).toEqual([]);
   });
 
   it("only suggests legal moves", () => {

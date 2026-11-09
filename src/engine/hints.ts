@@ -1,3 +1,4 @@
+import type { Card } from "./cards.ts";
 import type { GameState, Move, Pile } from "./types.ts";
 import { findPile, pilesKey } from "./state.ts";
 import type { Variant } from "./variant.ts";
@@ -11,6 +12,32 @@ function isStockMove(move: Move): boolean {
 
 function hiddenBelow(pile: Pile, index: number): number {
   return pile.cards.slice(0, index).filter((card) => !card.faceUp).length;
+}
+
+/**
+ * Scores moving a run off one valid parent onto another. That usually just shuffles it
+ * around, so it scores zero unless the run gains a parent of its own suit it didn't have
+ * (how runs come together in Spider with more than one suit), or the card it uncovers can
+ * then go to a foundation.
+ */
+function reparentScore(
+  variant: Variant,
+  state: GameState,
+  move: Extract<Move, { kind: "move" }>,
+  card: Card,
+  oldParent: Card,
+  newParent: Card | undefined,
+): number {
+  if (newParent?.suit === card.suit && oldParent.suit !== card.suit) {
+    return 270;
+  }
+  const after = variant.applyMove(state, move);
+  const freed = after.piles.some(
+    (pile) =>
+      pile.kind === "foundation" &&
+      variant.canMove(after, { kind: "move", from: move.from, index: move.index - 1, to: pile.id }),
+  );
+  return freed ? 450 : 0;
 }
 
 /**
@@ -56,19 +83,7 @@ export function hintScore(variant: Variant, state: GameState, move: Move): numbe
     return target.cards.length === 0 ? 0 : 300;
   }
   if (source.kind === "tableau" && below?.faceUp === true && below.rank === card.rank + 1) {
-    // Moving a run off one valid parent onto another just shuffles it around, unless the
-    // card underneath can then go somewhere useful.
-    const after = variant.applyMove(state, move);
-    const freed = variant
-      .legalMoves(after)
-      .some(
-        (next) =>
-          next.kind === "move" &&
-          next.from === move.from &&
-          next.index === move.index - 1 &&
-          findPile(after, next.to)?.kind === "foundation",
-      );
-    return freed ? 450 : 0;
+    return reparentScore(variant, state, move, card, below, target.cards.at(-1));
   }
   if (source.kind === "cell") {
     return target.cards.length === 0 ? 120 : 250;
