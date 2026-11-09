@@ -8,6 +8,7 @@ import type {
   RefObject,
 } from "react";
 import type { Card } from "../engine/cards.ts";
+import type { PileNouns } from "../engine/describe.ts";
 import { cardLabel, pileLabel, pileName } from "../engine/describe.ts";
 import type { GameState, PileId } from "../engine/types.ts";
 import type { TableLayout } from "../engine/variant.ts";
@@ -224,6 +225,8 @@ interface TableProps {
   readonly highlight?: Highlight;
   readonly cursor?: CardRef | undefined;
   readonly tableRef: RefObject<HTMLElement | null>;
+  /** The variant's own names for piles, for screen readers. */
+  readonly pileNouns?: PileNouns | undefined;
   readonly handlers: {
     readonly onPointerDown: PointerEventHandler<HTMLElement>;
     readonly onPointerMove: PointerEventHandler<HTMLElement>;
@@ -330,11 +333,12 @@ export function Table({
   highlight,
   cursor,
   tableRef,
+  pileNouns,
   handlers,
 }: TableProps) {
   useCardMotion(tableRef, geometry, drag);
   const topIndex = new Map(state.piles.map((pile) => [pile.id, pile.cards.length - 1]));
-  const names = new Map(state.piles.map((pile) => [pile.id, pileName(state, pile.id)]));
+  const names = new Map(state.piles.map((pile) => [pile.id, pileName(state, pile.id, pileNouns)]));
   const kinds = new Map(state.piles.map((pile) => [pile.id, pile.kind]));
   const style: CSSProperties = {
     "--card-w": `${geometry.cardWidth}px`,
@@ -369,7 +373,7 @@ export function Table({
               .join(" ")}
             style={{ transform: `translate(${base.x}px, ${base.y}px)` }}
             tabIndex={cursor?.pile === pileLayout.id && cursor.index === -1 ? 0 : -1}
-            aria-label={pileLabel(state, pileLayout.id)}
+            aria-label={pileLabel(state, pileLayout.id, pileNouns)}
             data-pile={pileLayout.id}
             data-index={-1}
             data-kind={kinds.get(pileLayout.id)}

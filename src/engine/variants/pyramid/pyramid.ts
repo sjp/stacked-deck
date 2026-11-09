@@ -319,6 +319,7 @@ export const pyramid: Variant = {
     },
   ],
   defaultOptions: { passes: 3 },
+  pileNouns: { tableau: "card", foundation: "discard pile" },
   scored: true,
   deal,
   layout,

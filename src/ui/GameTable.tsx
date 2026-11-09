@@ -56,14 +56,14 @@ export function GameTable({
 
   const play = useCallback(
     (move: Move) => {
-      const text = describeMove(state, move);
+      const text = describeMove(state, move, variant.pileNouns);
       const ok = onPlay(move);
       if (ok) {
         announce(text);
       }
       return ok;
     },
-    [announce, onPlay, state],
+    [announce, onPlay, state, variant.pileNouns],
   );
 
   const interaction = useTableInteraction({
@@ -175,6 +175,7 @@ export function GameTable({
           {...(highlight === undefined ? {} : { highlight })}
           cursor={cursor}
           tableRef={tableRef}
+          pileNouns={variant.pileNouns}
           handlers={{ ...interaction.handlers, onKeyDown, onClick, onFocus }}
         />
       )}

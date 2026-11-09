@@ -1,3 +1,4 @@
+import type { PileNouns } from "./describe.ts";
 import type { GameState, Move, OptionValue, PileId, VariantOptions } from "./types.ts";
 
 export interface OptionChoice {
@@ -55,6 +56,8 @@ export interface Variant {
   readonly scored: boolean;
   /** Lower scores are better (Golf). */
   readonly lowScoreWins?: boolean;
+  /** Spoken names for piles that aren't columns or foundations, such as Pyramid's cards. */
+  readonly pileNouns?: PileNouns;
 
   deal(seed: number, options: VariantOptions): GameState;
   layout(state: GameState, context: LayoutContext): TableLayout;

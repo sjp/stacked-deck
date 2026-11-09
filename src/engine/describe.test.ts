@@ -6,6 +6,7 @@ const state = makeState("klondike", [
   { id: "stock", kind: "stock", cards: "-AS" },
   { id: "waste", kind: "waste", cards: "7H" },
   { id: "f0", kind: "foundation" },
+  { id: "f1", kind: "foundation" },
   { id: "t0", kind: "tableau", cards: "-2C 8S" },
   { id: "t1", kind: "tableau", cards: "9H 8C 7D" },
   { id: "t2", kind: "tableau" },
@@ -23,6 +24,17 @@ describe("labels", () => {
     expect(pileLabel(state, "t0")).toBe("Column 1, 2 cards, top: 8 of spades");
     expect(pileLabel(state, "t2")).toBe("Column 3, empty");
     expect(pileLabel(state, "stock")).toBe("Stock, 1 card, top: face-down card");
+  });
+
+  it("uses a variant's own names, numbering only piles that have company", () => {
+    const pyramid = makeState("pyramid", [
+      { id: "p0", kind: "tableau", cards: "KH" },
+      { id: "p1", kind: "tableau" },
+      { id: "f0", kind: "foundation" },
+    ]);
+    const nouns = { tableau: "card", foundation: "discard pile" };
+    expect(pileName(pyramid, "p1", nouns)).toBe("card 2");
+    expect(pileName(pyramid, "f0", nouns)).toBe("discard pile");
   });
 });
 

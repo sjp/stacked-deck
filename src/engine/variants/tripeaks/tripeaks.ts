@@ -232,6 +232,7 @@ export const tripeaks: Variant = {
       ],
     },
   ],
+  pileNouns: { tableau: "card" },
   defaultOptions: { wrap: true },
   scored: true,
   deal,
