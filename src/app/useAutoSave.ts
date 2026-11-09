@@ -5,8 +5,9 @@ import { currentState } from "./useGame.ts";
 import type { Timer } from "./useTimer.ts";
 
 /**
- * Saves the game after every change, and again when the page is hidden or unloaded
- * (iOS doesn't reliably fire beforeunload). A won game's save is removed.
+ * Saves the game after every change, and again when the page is hidden or unloaded (iOS
+ * doesn't reliably fire beforeunload) or the game screen closes, so time spent thinking
+ * since the last move is kept. A won game's save is removed.
  */
 export function useAutoSave(game: Game, hints: number, timer: Timer): void {
   const latest = useRef({ game, hints });
@@ -38,6 +39,7 @@ export function useAutoSave(game: Game, hints: number, timer: Timer): void {
     return () => {
       document.removeEventListener("visibilitychange", onHide);
       globalThis.removeEventListener("pagehide", save);
+      save();
     };
   }, [save]);
 }
