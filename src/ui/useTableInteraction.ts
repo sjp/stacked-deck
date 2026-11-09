@@ -27,7 +27,8 @@ interface Press extends CardRef {
   readonly pointerId: number;
   readonly startX: number;
   readonly startY: number;
-  readonly canDrag: boolean;
+  /** Where a drag picks up from, if one can start here. */
+  readonly dragFrom: CardRef | undefined;
   readonly threshold: number;
   dragging: boolean;
   /** Moved too far to count as a tap (on a card that can't be dragged). */
@@ -86,6 +87,30 @@ export function dropMoveOnto(
     const shorter = variant.dropMove(state, from.pile, index, to.id);
     if (shorter !== undefined) {
       return shorter;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Where a drag from a pressed card picks up: the card itself, or, when it can't be picked up,
+ * the first card below it in the same tableau pile that can (the base of the movable run).
+ * A fingertip covers several fanned cards, so a touch just above the run still grabs it.
+ */
+function dragStart(variant: Variant, state: GameState, ref: CardRef): CardRef | undefined {
+  if (ref.index < 0) {
+    return undefined;
+  }
+  if (variant.canPickUp(state, ref.pile, ref.index)) {
+    return ref;
+  }
+  const pile = findPile(state, ref.pile);
+  if (pile?.kind !== "tableau") {
+    return undefined;
+  }
+  for (let index = ref.index + 1; index < pile.cards.length; index++) {
+    if (variant.canPickUp(state, ref.pile, index)) {
+      return { pile: ref.pile, index };
     }
   }
   return undefined;
@@ -332,7 +357,7 @@ export function useTableInteraction({
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        canDrag: ref.index >= 0 && variant.canPickUp(state, ref.pile, ref.index),
+        dragFrom: dragStart(variant, state, ref),
         threshold: event.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch,
         dragging: false,
         wandered: false,
@@ -349,7 +374,8 @@ export function useTableInteraction({
       }
       const dx = event.clientX - current.startX;
       const dy = event.clientY - current.startY;
-      if (!current.canDrag) {
+      const from = current.dragFrom;
+      if (from === undefined) {
         // A swipe across the stock shouldn't draw.
         current.wandered ||= Math.hypot(dx, dy) >= current.threshold;
         return;
@@ -360,18 +386,14 @@ export function useTableInteraction({
         }
         current.dragging = true;
         const pile = tableRef.current?.querySelectorAll<HTMLElement>(
-          `.card-slot[data-pile="${CSS.escape(current.pile)}"]`,
+          `.card-slot[data-pile="${CSS.escape(from.pile)}"]`,
         );
         draggedElements.current = [...(pile ?? [])].filter(
-          (element) => Number(element.dataset["index"]) >= current.index,
+          (element) => Number(element.dataset["index"]) >= from.index,
         );
         setSelection(undefined);
         emitFeedback("pickup");
-        setDrag({
-          pile: current.pile,
-          index: current.index,
-          targets: legalTargets(variant, state, current),
-        });
+        setDrag({ ...from, targets: legalTargets(variant, state, from) });
       }
       setDragOffset(dx, dy);
     },
@@ -380,9 +402,10 @@ export function useTableInteraction({
 
   const finishDrag = useCallback(
     (current: Press, clientX: number, clientY: number) => {
-      const targets = legalTargets(variant, state, current);
+      const from = current.dragFrom ?? current;
+      const targets = legalTargets(variant, state, from);
       const start = geometry?.cards.find(
-        (placement) => placement.pile === current.pile && placement.index === current.index,
+        (placement) => placement.pile === from.pile && placement.index === from.index,
       );
       const table = tableRef.current?.getBoundingClientRect();
       let best: Move | undefined;
@@ -423,11 +446,11 @@ export function useTableInteraction({
           ) ?? null,
       );
       // Let go over bare felt or its own pile: the cards just slide back, without a fuss.
-      if (pointed === undefined || pointed.pile === current.pile) {
+      if (pointed === undefined || pointed.pile === from.pile) {
         return;
       }
-      shake(current);
-      const reason = variant.explainMove?.(state, current.pile, current.index, pointed.pile);
+      shake(from);
+      const reason = variant.explainMove?.(state, from.pile, from.index, pointed.pile);
       if (reason !== undefined) {
         say(reason);
       }
