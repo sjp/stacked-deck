@@ -86,9 +86,6 @@ export function HomeScreen({ inProgress = NONE }: Props) {
         <h1>Stacked Deck</h1>
         <nav className="home-links" aria-label="More">
           <InstallButton />
-          <a className="button" href={routeHash({ name: "daily" })}>
-            Daily
-          </a>
           <a className="button" href={routeHash({ name: "stats" })}>
             Stats
           </a>

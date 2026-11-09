@@ -13,11 +13,9 @@ interface Props {
   readonly variant: Variant;
   /** Deal this seed instead of a random one. */
   readonly seed?: number | undefined;
-  /** The date of the daily deal being played, if it is one. */
-  readonly daily?: string | undefined;
 }
 
-export function GameScreen({ variant, seed, daily }: Props) {
+export function GameScreen({ variant, seed }: Props) {
   const { settings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -26,7 +24,6 @@ export function GameScreen({ variant, seed, daily }: Props) {
     seed,
     settings,
     paused: settingsOpen || helpOpen,
-    daily,
   });
   const { game, state, start, won } = session;
 
@@ -70,11 +67,6 @@ export function GameScreen({ variant, seed, daily }: Props) {
   );
 
   const startNew = (options = game.options) => {
-    if (daily !== undefined) {
-      // A daily deal has only one deal; a new game goes back to the list.
-      navigate({ name: "daily" });
-      return;
-    }
     start(options, undefined);
     if (seed !== undefined) {
       navigate({ name: "play", variant: variant.id }, true);
@@ -163,7 +155,8 @@ export function GameScreen({ variant, seed, daily }: Props) {
           onClose: () => {
             setSettingsOpen(false);
           },
-          ...(daily === undefined ? { variant, currentOptions: game.options } : {}),
+          variant,
+          currentOptions: game.options,
           onNewGame: startNew,
         }}
         win={{
@@ -180,7 +173,6 @@ export function GameScreen({ variant, seed, daily }: Props) {
             hints: session.hints,
             undos: game.undos,
             newBests: session.newBests,
-            daily,
           },
           onNewGame: () => {
             startNew();
