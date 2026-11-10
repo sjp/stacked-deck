@@ -46,20 +46,21 @@ export function Dialog({
     if (!isOwnEntry(globalThis.history.state, id)) {
       globalThis.history.pushState({ dialog: id }, "");
     }
-    let closedByHistory = false;
+    // An object rather than a reassigned local: the popstate listener sets it, the cleanup reads it.
+    const exit = { byHistory: false };
     const onPopState = () => {
       if (isOwnEntry(globalThis.history.state, id)) {
         // Still on this dialog's entry (a nested dialog closed).
         return;
       }
-      closedByHistory = true;
+      exit.byHistory = true;
       closeFromHistory();
     };
     globalThis.addEventListener("popstate", onPopState);
     return () => {
       globalThis.removeEventListener("popstate", onPopState);
       dialog.close();
-      if (!closedByHistory) {
+      if (!exit.byHistory) {
         // Deferred, so an immediate reopen (such as a remount) keeps the same entry.
         pendingBack.current = setTimeout(() => {
           if (isOwnEntry(globalThis.history.state, id)) {
