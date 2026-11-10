@@ -90,14 +90,15 @@ export function WinAnimation({ cards, onDone }: Props) {
       finish();
       return undefined;
     }
-    let width = 0;
-    let height = 0;
+    // Mutable animation state lives on objects rather than reassigned locals, since the
+    // callbacks below update it after the effect has run.
+    const view = { width: 0, height: 0 };
     const fit = () => {
       const scale = globalThis.devicePixelRatio;
-      width = globalThis.innerWidth;
-      height = globalThis.innerHeight;
-      canvas.width = Math.ceil(width * scale);
-      canvas.height = Math.ceil(height * scale);
+      view.width = globalThis.innerWidth;
+      view.height = globalThis.innerHeight;
+      canvas.width = Math.ceil(view.width * scale);
+      canvas.height = Math.ceil(view.height * scale);
       context.setTransform(scale, 0, 0, scale, 0, 0);
     };
     fit();
@@ -114,24 +115,26 @@ export function WinAnimation({ cards, onDone }: Props) {
     const cardHeight = Math.round(cardWidth * CARD_RATIO);
     const queue = [...cards];
     const flying: Flying[] = [];
-    let launched = 0;
-    let sinceLaunch = LAUNCH_EVERY;
-    let elapsed = 0;
-    let last = performance.now();
-    let frame = 0;
+    const run = {
+      launched: 0,
+      sinceLaunch: LAUNCH_EVERY,
+      elapsed: 0,
+      last: performance.now(),
+      frame: 0,
+    };
 
     const launch = () => {
       const card = queue.shift();
       if (card === undefined) {
         return;
       }
-      const origin = origins[launched % Math.max(1, origins.length)];
-      launched += 1;
+      const origin = origins[run.launched % Math.max(1, origins.length)];
+      run.launched += 1;
       const direction = Math.random() < 0.5 ? -1 : 1;
-      const speed = (0.6 + Math.random()) * Math.max(220, width * 0.3);
+      const speed = (0.6 + Math.random()) * Math.max(220, view.width * 0.3);
       flying.push({
         image: renderCard(card, cardWidth),
-        x: origin?.left ?? width / 2,
+        x: origin?.left ?? view.width / 2,
         y: origin?.top ?? 0,
         vx: direction * speed,
         vy: -Math.random() * 700,
@@ -140,16 +143,16 @@ export function WinAnimation({ cards, onDone }: Props) {
     };
 
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      elapsed += dt;
-      sinceLaunch += dt;
-      if (sinceLaunch >= LAUNCH_EVERY && flying.length < MAX_FLYING && queue.length > 0) {
-        sinceLaunch = 0;
+      const dt = Math.min(0.05, (now - run.last) / 1000);
+      run.last = now;
+      run.elapsed += dt;
+      run.sinceLaunch += dt;
+      if (run.sinceLaunch >= LAUNCH_EVERY && flying.length < MAX_FLYING && queue.length > 0) {
+        run.sinceLaunch = 0;
         launch();
       }
 
-      context.clearRect(0, 0, width, height);
+      context.clearRect(0, 0, view.width, view.height);
       for (let i = flying.length - 1; i >= 0; i--) {
         const card = flying[i];
         if (card === undefined) {
@@ -158,8 +161,8 @@ export function WinAnimation({ cards, onDone }: Props) {
         card.vy += GRAVITY * dt;
         card.x += card.vx * dt;
         card.y += card.vy * dt;
-        if (card.y + cardHeight > height) {
-          card.y = height - cardHeight;
+        if (card.y + cardHeight > view.height) {
+          card.y = view.height - cardHeight;
           card.vy = -card.vy * BOUNCE;
         }
         card.trail.push({ x: card.x, y: card.y });
@@ -172,18 +175,18 @@ export function WinAnimation({ cards, onDone }: Props) {
         });
         context.globalAlpha = 1;
         context.drawImage(card.image, card.x, card.y, cardWidth, cardHeight);
-        if (card.x > width || card.x + cardWidth < 0) {
+        if (card.x > view.width || card.x + cardWidth < 0) {
           flying.splice(i, 1);
         }
       }
 
-      if ((queue.length === 0 && flying.length === 0) || elapsed > MAX_SECONDS) {
+      if ((queue.length === 0 && flying.length === 0) || run.elapsed > MAX_SECONDS) {
         finish();
         return;
       }
-      frame = requestAnimationFrame(tick);
+      run.frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
+    run.frame = requestAnimationFrame(tick);
 
     // Stop when the tab is hidden rather than resuming later.
     const onHidden = () => {
@@ -202,7 +205,7 @@ export function WinAnimation({ cards, onDone }: Props) {
     globalThis.addEventListener("keydown", onKey);
     return () => {
       globalThis.removeEventListener("keydown", onKey);
-      cancelAnimationFrame(frame);
+      cancelAnimationFrame(run.frame);
       globalThis.removeEventListener("resize", fit);
       document.removeEventListener("visibilitychange", onHidden);
     };
