@@ -17,6 +17,15 @@ function solutionOf(result: SolveResult): readonly Move[] {
 const LIMITS = { maxNodes: 2_000_000, maxMs: 5000 };
 
 /**
+ * A clock that never advances, so only the node limit stops a search and the result
+ * doesn't depend on how fast the machine running the tests is.
+ */
+const FROZEN_CLOCK = { now: () => 0 };
+
+/** For the searches that take a second or two here and several times that on CI. */
+const SLOW_TEST = { timeout: 30_000 };
+
+/**
  * Replays a solution the way a player would: from the deal after its automatic moves,
  * with automatic moves after each move.
  */
@@ -85,9 +94,9 @@ const bestFirstGolf: Variant = {
 };
 
 describe("solve, best-first", () => {
-  it("finds a solution that replays to a win", () => {
+  it("finds a solution that replays to a win", SLOW_TEST, () => {
     const start = bestFirstGolf.deal(1, { wrap: true, onKing: true });
-    const result = solve(bestFirstGolf, start, LIMITS);
+    const result = solve(bestFirstGolf, start, LIMITS, FROZEN_CLOCK);
     expect(result.status).toBe("solved");
     expect(replaysToWin(bestFirstGolf, start, solutionOf(result))).toBe(true);
   });
@@ -116,19 +125,25 @@ describe("solve, best-first", () => {
     expect(result).toEqual({ status: "gave-up", nodes: 256 });
   });
 
-  it("wins FreeCell deals that depth-first search can't within the same node limit", () => {
-    // Found by searching seeds: best-first wins each in a few thousand positions.
-    const seeds = [1, 3, 5, 6, 20];
-    const limits = { maxNodes: 10_000, maxMs: 10_000 };
-    const depthFirstFreecell: Variant = { ...freecell };
-    delete depthFirstFreecell.solverEstimate;
-    expect(freecell).toHaveProperty("solverEstimate");
-    for (const seed of seeds) {
-      const start = freecell.deal(seed, {});
-      const bestFirst = solve(freecell, start, limits);
-      expect(bestFirst.status, `seed ${seed}`).toBe("solved");
-      expect(replaysToWin(freecell, start, solutionOf(bestFirst))).toBe(true);
-      expect(solve(depthFirstFreecell, start, limits).status, `seed ${seed}`).toBe("gave-up");
-    }
-  });
+  it(
+    "wins FreeCell deals that depth-first search can't within the same node limit",
+    SLOW_TEST,
+    () => {
+      // Found by searching seeds: best-first wins each in a few thousand positions.
+      const seeds = [1, 3, 5, 6, 20];
+      const limits = { maxNodes: 10_000, maxMs: 10_000 };
+      const depthFirstFreecell: Variant = { ...freecell };
+      delete depthFirstFreecell.solverEstimate;
+      expect(freecell).toHaveProperty("solverEstimate");
+      for (const seed of seeds) {
+        const start = freecell.deal(seed, {});
+        const bestFirst = solve(freecell, start, limits, FROZEN_CLOCK);
+        expect(bestFirst.status, `seed ${seed}`).toBe("solved");
+        expect(replaysToWin(freecell, start, solutionOf(bestFirst))).toBe(true);
+        expect(solve(depthFirstFreecell, start, limits, FROZEN_CLOCK).status, `seed ${seed}`).toBe(
+          "gave-up",
+        );
+      }
+    },
+  );
 });
