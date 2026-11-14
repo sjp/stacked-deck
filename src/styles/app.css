@@ -386,6 +386,12 @@ button.primary {
   color: var(--fg);
   border: 1px solid var(--border);
   box-shadow: 0 8px 30px rgb(0 0 0 / 0.3);
+  max-width: calc(100vw - 2 * var(--space-4));
+  white-space: nowrap;
+}
+
+.toast button {
+  border-radius: 999px;
 }
 
 .win-canvas {
